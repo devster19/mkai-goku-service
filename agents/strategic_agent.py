@@ -49,29 +49,76 @@ class StrategicAgent:
         """Analyze business and create strategic plan"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
         location = business_data.get("location", "")
+        description = business_data.get("description", "")
+        target_market = business_data.get("target_market", "")
         competitors = business_data.get("competitors", [])
         growth_goals = business_data.get("growth_goals", [])
+        industry = business_data.get("industry", "")
+        business_model = business_data.get("business_model", "")
+        market_size = business_data.get("market_size", "")
+        unique_value_proposition = business_data.get("unique_value_proposition", "")
+        initial_investment = business_data.get("initial_investment")
+        team_size = business_data.get("team_size")
 
-        # Create prompt for strategic analysis
+        # Create dynamic prompt for strategic analysis
         prompt = f"""
         As a strategic business consultant, analyze the following business and provide a comprehensive strategic plan:
 
-        Business Name: {business_name}
-        Location: {location}
-        Competitors: {', '.join(competitors)}
-        Growth Goals: {', '.join(growth_goals)}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Location: {location}
+        - Description: {description}
+        - Target Market: {target_market}
+        - Industry: {industry}
+        - Business Model: {business_model}
+        - Market Size: {market_size}
+        - Unique Value Proposition: {unique_value_proposition}
+        - Initial Investment: ${initial_investment:,.0f}" if initial_investment else "Not specified"
+        - Team Size: {team_size} employees" if team_size else "Not specified"
+        - Competitors: {', '.join(competitors)}
+        - Growth Goals: {', '.join(growth_goals)}
 
-        Please provide a strategic analysis including:
-        1. Market positioning strategy
-        2. Competitive advantage analysis
-        3. Growth strategy recommendations
-        4. Risk assessment
-        5. Key performance indicators (KPIs)
-        6. Implementation timeline
-        7. Resource requirements
+        Please provide a comprehensive strategic analysis specifically tailored for this {business_type} business, including:
 
-        Format your response as a structured strategic plan with clear sections and actionable recommendations.
+        1. Market Analysis:
+           - Target market assessment
+           - Market size and growth potential
+           - Market trends and opportunities
+
+        2. Competitive Positioning:
+           - Unique value proposition analysis
+           - Competitive advantages
+           - Differentiation strategy
+
+        3. Growth Strategy:
+           - Short-term goals (0-12 months)
+           - Medium-term goals (1-3 years)
+           - Long-term goals (3-5 years)
+
+        4. Risk Assessment:
+           - Market risks
+           - Operational risks
+           - Mitigation strategies
+
+        5. Key Performance Indicators (KPIs):
+           - Revenue metrics
+           - Customer metrics
+           - Operational metrics
+
+        6. Implementation Timeline:
+           - Phase 1 (0-6 months)
+           - Phase 2 (6-12 months)
+           - Phase 3 (12-24 months)
+
+        7. Resource Requirements:
+           - Financial requirements
+           - Human resources
+           - Technology needs
+
+        Focus on providing specific, actionable recommendations that are relevant to this particular business type and industry.
         """
 
         try:
@@ -81,82 +128,99 @@ class StrategicAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert strategic business consultant with deep knowledge of market analysis, competitive positioning, and business growth strategies.",
+                        "content": f"You are an expert strategic business consultant with deep knowledge of {industry} industry, market analysis, competitive positioning, and business growth strategies. Provide specific, actionable advice tailored to {business_type} businesses.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1500,
+                max_tokens=2000,
                 temperature=0.7,
             )
 
             strategic_analysis = response.choices[0].message.content
 
-            # Parse and structure the response
+            # Create dynamic strategic plan structure
             strategic_plan = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "location": location,
                 "market_analysis": {
-                    "target_market": "Local coffee enthusiasts and professionals",
-                    "market_size": "Growing coffee market in Bangkok",
-                    "market_trends": "Increasing demand for specialty coffee",
+                    "target_market": target_market,
+                    "market_size": market_size or "To be determined",
+                    "market_trends": f"Industry-specific trends for {industry}",
                 },
                 "competitive_positioning": {
-                    "unique_value_proposition": "Friendly atmosphere with high-quality coffee",
+                    "unique_value_proposition": unique_value_proposition
+                    or f"Quality {business_type} services",
                     "competitive_advantages": [
-                        "Personalized customer service",
-                        "Prime location in Bangkok",
-                        "Quality coffee beans",
+                        f"Specialized {business_type} expertise",
+                        f"Strong market positioning in {location}",
+                        "Customer-focused approach",
                     ],
-                    "differentiation_strategy": "Focus on customer experience and community building",
+                    "differentiation_strategy": f"Focus on {business_type} excellence and customer experience",
                 },
                 "growth_strategy": {
                     "short_term_goals": growth_goals,
                     "medium_term_goals": [
-                        "Expand to 3 locations within 2 years",
-                        "Develop online ordering system",
-                        "Launch loyalty program",
+                        f"Expand {business_type} operations",
+                        "Develop online presence",
+                        "Build customer loyalty program",
                     ],
                     "long_term_goals": [
-                        "Establish coffee roasting facility",
-                        "Franchise opportunities",
-                        "Export coffee products",
+                        f"Establish {business_type} market leadership",
+                        "Explore franchise opportunities",
+                        "Expand to new markets",
                     ],
                 },
                 "risk_assessment": {
                     "market_risks": [
-                        "Economic downturn affecting discretionary spending",
+                        "Economic downturn affecting customer spending",
                         "New competitors entering the market",
+                        f"Industry-specific regulatory changes",
                     ],
-                    "operational_risks": ["Supply chain disruptions", "Staff turnover"],
+                    "operational_risks": [
+                        "Supply chain disruptions",
+                        "Staff turnover and training",
+                        "Technology infrastructure challenges",
+                    ],
                     "mitigation_strategies": [
                         "Diversify revenue streams",
                         "Build strong supplier relationships",
                         "Invest in employee training and retention",
+                        "Implement robust technology systems",
                     ],
                 },
                 "kpis": [
                     "Monthly revenue growth",
-                    "Customer retention rate",
-                    "Average transaction value",
+                    "Customer acquisition cost",
+                    "Customer lifetime value",
                     "Customer satisfaction score",
-                    "Market share in target area",
+                    f"{business_type} specific metrics",
                 ],
                 "implementation_timeline": {
-                    "phase_1": "0-6 months: Optimize current operations",
-                    "phase_2": "6-12 months: Implement growth initiatives",
-                    "phase_3": "12-24 months: Expand to new locations",
+                    "phase_1": "0-6 months: Optimize current operations and establish foundation",
+                    "phase_2": "6-12 months: Implement growth initiatives and expand market presence",
+                    "phase_3": "12-24 months: Scale operations and explore new opportunities",
                 },
                 "resource_requirements": {
-                    "financial": "Initial investment of 2-3 million THB",
-                    "human": "Additional 5-8 staff members",
-                    "technology": "POS system, inventory management, online platform",
+                    "financial": (
+                        f"Initial investment of ${initial_investment:,.0f}"
+                        if initial_investment
+                        else "Investment requirements to be determined"
+                    ),
+                    "human": (
+                        f"{team_size + 5 if team_size else 10} staff members"
+                        if team_size
+                        else "Team size to be determined"
+                    ),
+                    "technology": f"{business_type} specific technology and systems",
                 },
                 "key_recommendations": [
-                    "Focus on customer experience and quality",
-                    "Develop strong brand identity",
+                    f"Focus on {business_type} quality and customer experience",
+                    "Develop strong brand identity and market positioning",
                     "Implement data-driven decision making",
-                    "Build partnerships with local suppliers",
+                    "Build strategic partnerships and supplier relationships",
                     "Invest in digital marketing and online presence",
+                    f"Stay updated with {industry} industry trends",
                 ],
                 "ai_analysis": strategic_analysis,
             }
@@ -164,27 +228,32 @@ class StrategicAgent:
             return strategic_plan
 
         except Exception as e:
-            # Fallback to predefined strategic plan if OpenAI fails
+            # Fallback to dynamic strategic plan if OpenAI fails
             return {
                 "business_name": business_name,
+                "business_type": business_type,
                 "location": location,
                 "market_analysis": {
-                    "target_market": "Local coffee enthusiasts",
-                    "market_size": "Growing market",
-                    "market_trends": "Increasing demand",
+                    "target_market": target_market or f"{business_type} customers",
+                    "market_size": market_size or "Growing market",
+                    "market_trends": f"Positive trends in {industry}",
                 },
                 "competitive_positioning": {
-                    "unique_value_proposition": "Quality coffee with friendly service",
+                    "unique_value_proposition": unique_value_proposition
+                    or f"Quality {business_type} services",
                     "competitive_advantages": ["Location", "Quality", "Service"],
-                    "differentiation_strategy": "Customer experience focus",
+                    "differentiation_strategy": f"Focus on {business_type} excellence",
                 },
                 "growth_strategy": {
                     "short_term_goals": growth_goals,
-                    "medium_term_goals": ["Expand locations", "Online presence"],
-                    "long_term_goals": ["Franchise opportunities"],
+                    "medium_term_goals": [
+                        f"Expand {business_type} operations",
+                        "Develop online presence",
+                    ],
+                    "long_term_goals": [f"Establish {business_type} market leadership"],
                 },
                 "key_recommendations": [
-                    "Focus on quality and customer service",
+                    f"Focus on {business_type} quality and customer service",
                     "Develop strong brand identity",
                     "Implement growth strategies systematically",
                 ],

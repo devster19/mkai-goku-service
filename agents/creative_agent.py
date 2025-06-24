@@ -52,29 +52,70 @@ class CreativeAgent:
         """Analyze creative aspects of the business"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
         location = business_data.get("location", "")
+        description = business_data.get("description", "")
+        target_market = business_data.get("target_market", "")
         competitors = business_data.get("competitors", [])
+        industry = business_data.get("industry", "")
+        business_model = business_data.get("business_model", "")
+        unique_value_proposition = business_data.get("unique_value_proposition", "")
 
-        # Create prompt for creative analysis
+        # Create dynamic prompt for creative analysis
         prompt = f"""
         As a creative marketing and branding expert, analyze the following business and provide creative recommendations:
 
-        Business Name: {business_name}
-        Location: {location}
-        Competitors: {', '.join(competitors)}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Location: {location}
+        - Description: {description}
+        - Target Market: {target_market}
+        - Industry: {industry}
+        - Business Model: {business_model}
+        - Unique Value Proposition: {unique_value_proposition}
+        - Competitors: {', '.join(competitors)}
         
         Strategic Plan Context: {strategic_plan.get('competitive_positioning', {}).get('unique_value_proposition', '')}
 
-        Please provide creative analysis including:
-        1. Brand identity recommendations
-        2. Marketing campaign ideas
-        3. Visual design suggestions
-        4. Content marketing strategy
-        5. Social media approach
-        6. Customer engagement tactics
-        7. Creative differentiation ideas
+        Please provide creative analysis specifically tailored for this {business_type} business in the {industry} industry, including:
 
-        Focus on creative ways to stand out from competitors and build a strong brand presence.
+        1. Brand Identity Recommendations:
+           - Brand personality and voice
+           - Brand values and positioning
+           - Visual identity elements
+
+        2. Marketing Campaign Ideas:
+           - Campaign concepts and themes
+           - Marketing channels and tactics
+           - Seasonal and promotional campaigns
+
+        3. Visual Design Suggestions:
+           - Visual style and aesthetics
+           - Color palette and typography
+           - Brand consistency guidelines
+
+        4. Content Marketing Strategy:
+           - Content themes and topics
+           - Messaging framework
+           - Storytelling approach
+
+        5. Social Media Approach:
+           - Platform strategy
+           - Content calendar
+           - Engagement tactics
+
+        6. Customer Engagement Tactics:
+           - Loyalty programs
+           - Community building
+           - Interactive experiences
+
+        7. Creative Differentiation Ideas:
+           - Unique creative elements
+           - Competitive advantages
+           - Innovation opportunities
+
+        Focus on creative ways to stand out from competitors and build a strong brand presence for this {business_type} business in the {industry} industry.
         """
 
         try:
@@ -84,128 +125,129 @@ class CreativeAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert creative marketing consultant specializing in brand development, visual design, and innovative marketing strategies.",
+                        "content": f"You are an expert creative marketing consultant specializing in brand development, visual design, and innovative marketing strategies for {business_type} businesses in the {industry} industry. Provide specific, actionable creative recommendations tailored to this business type and industry.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1200,
+                max_tokens=1500,
                 temperature=0.8,
             )
 
             creative_analysis_text = response.choices[0].message.content
 
-            # Structure the creative analysis
+            # Create dynamic creative analysis structure
             creative_analysis = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "brand_identity": {
-                    "brand_personality": "Friendly, welcoming, and community-focused",
+                    "brand_personality": f"Professional, innovative, and {business_type}-focused",
                     "brand_values": [
-                        "Quality coffee and service",
-                        "Community building",
-                        "Sustainability",
+                        f"Quality {business_type} services",
                         "Customer satisfaction",
+                        "Innovation and excellence",
+                        "Industry expertise",
                     ],
-                    "brand_voice": "Warm, approachable, and knowledgeable",
+                    "brand_voice": "Professional, knowledgeable, and approachable",
                     "color_palette": {
-                        "primary": "#8B4513",  # Saddle Brown
-                        "secondary": "#DEB887",  # Burlywood
-                        "accent": "#D2691E",  # Chocolate
+                        "primary": "#2E86AB",  # Professional Blue
+                        "secondary": "#A23B72",  # Modern Purple
+                        "accent": "#F18F01",  # Energetic Orange
                     },
-                    "logo_concept": "Modern, minimalist design incorporating coffee elements with Thai cultural touches",
+                    "logo_concept": f"Modern, professional design incorporating {business_type} elements with industry-specific touches",
                 },
                 "marketing_campaigns": [
                     {
-                        "campaign_name": "Morning Ritual",
-                        "concept": "Celebrate the daily coffee ritual with local customers",
+                        "campaign_name": f"{business_type.title()} Excellence",
+                        "concept": f"Highlight the quality and expertise in {business_type} services",
                         "channels": [
                             "Social media",
-                            "Local partnerships",
-                            "In-store events",
+                            "Industry partnerships",
+                            "Professional events",
                         ],
                         "duration": "3 months",
                     },
                     {
-                        "campaign_name": "Community Corner",
-                        "concept": "Position the cafe as a community gathering space",
+                        "campaign_name": f"{industry} Innovation",
+                        "concept": f"Position the business as an innovative leader in {industry}",
                         "channels": [
-                            "Local events",
-                            "Partnerships with nearby businesses",
-                            "Social media",
+                            "Industry events",
+                            "Professional networks",
+                            "Digital marketing",
                         ],
                         "duration": "Ongoing",
                     },
                     {
-                        "campaign_name": "Thai Coffee Heritage",
-                        "concept": "Highlight Thai coffee culture and traditions",
+                        "campaign_name": f"{business_type} Success Stories",
+                        "concept": f"Showcase successful {business_type} projects and client outcomes",
                         "channels": [
-                            "Content marketing",
-                            "Cultural events",
-                            "Tourism partnerships",
+                            "Case studies",
+                            "Client testimonials",
+                            "Professional content",
                         ],
                         "duration": "6 months",
                     },
                 ],
                 "visual_design": {
-                    "store_interior": "Warm, rustic design with modern touches",
-                    "packaging": "Eco-friendly materials with Thai-inspired patterns",
-                    "menu_design": "Clean, readable layout with beautiful food photography",
-                    "digital_assets": "Consistent visual style across all platforms",
+                    "brand_identity": f"Professional, modern design reflecting {business_type} expertise",
+                    "marketing_materials": f"Consistent branding across all {business_type} materials",
+                    "digital_presence": f"Clean, professional website and social media presence",
+                    "presentation_materials": f"Professional templates for {business_type} presentations",
                 },
                 "content_strategy": {
                     "blog_topics": [
-                        "Coffee brewing techniques",
-                        "Local coffee culture",
-                        "Behind-the-scenes stories",
-                        "Customer spotlights",
+                        f"{business_type} industry insights",
+                        f"Best practices in {industry}",
+                        f"Success stories and case studies",
+                        f"{business_type} trends and innovations",
                     ],
                     "social_media_content": [
-                        "Daily coffee photos",
-                        "Customer testimonials",
-                        "Staff stories",
-                        "Local community events",
+                        f"{business_type} service highlights",
+                        "Client testimonials and reviews",
+                        f"Industry expertise and thought leadership",
+                        f"{business_type} project showcases",
                     ],
                     "video_content": [
-                        "Coffee preparation videos",
-                        "Store atmosphere tours",
-                        "Customer interviews",
-                        "Behind-the-scenes content",
+                        f"{business_type} service demonstrations",
+                        "Client success stories",
+                        f"Industry insights and analysis",
+                        f"{business_type} process explanations",
                     ],
                 },
                 "social_media_strategy": {
-                    "platforms": ["Facebook", "Instagram", "Line", "TikTok"],
-                    "content_calendar": "Daily posts with weekly themes",
+                    "platforms": ["LinkedIn", "Facebook", "Instagram", "Twitter"],
+                    "content_calendar": "Professional content with industry insights",
                     "engagement_tactics": [
-                        "User-generated content campaigns",
-                        "Interactive polls and questions",
-                        "Live streaming events",
-                        "Influencer partnerships",
+                        "Thought leadership content",
+                        "Industry discussions and insights",
+                        "Client success stories",
+                        "Professional networking",
                     ],
                 },
                 "customer_engagement": {
-                    "loyalty_program": "Coffee Passport with rewards and challenges",
+                    "loyalty_program": f"{business_type} Excellence Program with rewards and recognition",
                     "events": [
-                        "Coffee tasting sessions",
-                        "Barista workshops",
-                        "Local artist exhibitions",
-                        "Community meetups",
+                        f"{business_type} workshops and training",
+                        f"Industry networking events",
+                        f"Client appreciation events",
+                        f"{business_type} innovation showcases",
                     ],
-                    "personalization": "Remember customer preferences and offer personalized recommendations",
+                    "personalization": f"Tailored {business_type} solutions and personalized service recommendations",
                 },
                 "creative_differentiation": [
-                    "Thai-inspired coffee blends",
-                    "Local art exhibitions in the cafe",
-                    "Community bulletin board",
-                    "Seasonal Thai festival celebrations",
-                    "Partnership with local musicians for live performances",
+                    f"Specialized {business_type} expertise and knowledge",
+                    f"Industry-specific {business_type} solutions",
+                    f"Innovative {business_type} approaches and methodologies",
+                    f"Professional {business_type} service delivery",
+                    f"Thought leadership in {industry}",
                 ],
                 "recommendations": [
-                    "Develop a strong visual brand identity with consistent colors and typography",
-                    "Create engaging social media content that tells your story",
-                    "Host regular community events to build customer loyalty",
-                    "Partner with local artists and musicians for unique experiences",
-                    "Implement a customer loyalty program with gamification elements",
-                    "Focus on sustainability and eco-friendly practices in branding",
-                    "Create educational content about coffee and Thai culture",
+                    f"Develop a strong professional brand identity for {business_type} services",
+                    f"Create engaging content that showcases {business_type} expertise",
+                    f"Build thought leadership in the {industry} industry",
+                    f"Establish professional partnerships and networks",
+                    f"Implement a customer success program for {business_type} clients",
+                    f"Focus on innovation and excellence in {business_type} delivery",
+                    f"Create educational content about {business_type} and {industry} trends",
                 ],
                 "ai_analysis": creative_analysis_text,
             }
@@ -213,25 +255,30 @@ class CreativeAgent:
             return creative_analysis
 
         except Exception as e:
-            # Fallback to predefined creative analysis if OpenAI fails
+            # Fallback to dynamic creative analysis if OpenAI fails
             return {
                 "business_name": business_name,
+                "business_type": business_type,
                 "brand_identity": {
-                    "brand_personality": "Friendly and welcoming",
-                    "brand_values": ["Quality", "Community", "Service"],
-                    "color_palette": {"primary": "#8B4513", "secondary": "#DEB887"},
+                    "brand_personality": f"Professional and {business_type}-focused",
+                    "brand_values": [
+                        f"Quality {business_type} services",
+                        "Excellence",
+                        "Innovation",
+                    ],
+                    "color_palette": {"primary": "#2E86AB", "secondary": "#A23B72"},
                 },
                 "marketing_campaigns": [
                     {
-                        "campaign_name": "Community Focus",
-                        "concept": "Build local community connections",
+                        "campaign_name": f"{business_type} Excellence",
+                        "concept": f"Highlight {business_type} quality and expertise",
                     }
                 ],
                 "recommendations": [
-                    "Develop strong visual brand identity",
-                    "Create engaging social media content",
-                    "Host community events",
-                    "Focus on customer experience",
+                    f"Develop strong professional brand identity for {business_type}",
+                    f"Create engaging content showcasing {business_type} expertise",
+                    f"Build thought leadership in {industry}",
+                    f"Focus on {business_type} service excellence",
                 ],
             }
 

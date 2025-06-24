@@ -52,30 +52,77 @@ class FinancialAgent:
         """Analyze financial aspects of the business"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
         location = business_data.get("location", "")
+        description = business_data.get("description", "")
+        target_market = business_data.get("target_market", "")
         growth_goals = business_data.get("growth_goals", [])
+        industry = business_data.get("industry", "")
+        business_model = business_data.get("business_model", "")
+        initial_investment = business_data.get("initial_investment")
+        team_size = business_data.get("team_size")
 
-        # Create prompt for financial analysis
+        # Create dynamic prompt for financial analysis
         prompt = f"""
-        As a financial consultant specializing in small business finance, analyze the following business and provide financial recommendations:
+        As a financial consultant specializing in {business_type} business finance, analyze the following business and provide financial recommendations:
 
-        Business Name: {business_name}
-        Location: {location}
-        Growth Goals: {', '.join(growth_goals)}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Location: {location}
+        - Description: {description}
+        - Target Market: {target_market}
+        - Industry: {industry}
+        - Business Model: {business_model}
+        - Initial Investment: ${initial_investment:,.0f}" if initial_investment else "Not specified"
+        - Team Size: {team_size} employees" if team_size else "Not specified"
+        - Growth Goals: {', '.join(growth_goals)}
         
         Strategic Plan Context: {strategic_plan.get('growth_strategy', {}).get('short_term_goals', [])}
 
-        Please provide financial analysis including:
-        1. Financial projections and forecasts
-        2. Funding requirements and sources
-        3. Cost structure analysis
-        4. Pricing strategy recommendations
-        5. Cash flow management
-        6. Investment opportunities
-        7. Financial risk assessment
-        8. Break-even analysis
+        Please provide financial analysis specifically tailored for this {business_type} business in the {industry} industry, including:
 
-        Focus on practical financial strategies for a coffee shop business in Thailand.
+        1. Financial Projections and Forecasts:
+           - Revenue projections (1-3 years)
+           - Profit margin analysis
+           - Growth trajectory
+
+        2. Funding Requirements and Sources:
+           - Initial capital requirements
+           - Working capital needs
+           - Funding sources and options
+
+        3. Cost Structure Analysis:
+           - Fixed and variable costs
+           - Cost optimization strategies
+           - Operational efficiency
+
+        4. Pricing Strategy Recommendations:
+           - Pricing models and strategies
+           - Competitive pricing analysis
+           - Value-based pricing opportunities
+
+        5. Cash Flow Management:
+           - Cash flow projections
+           - Working capital management
+           - Payment terms and cycles
+
+        6. Investment Opportunities:
+           - Growth investment options
+           - ROI analysis
+           - Payback periods
+
+        7. Financial Risk Assessment:
+           - Financial risks and mitigation
+           - Contingency planning
+           - Financial sustainability
+
+        8. Break-even Analysis:
+           - Break-even point calculation
+           - Margin analysis
+           - Profitability thresholds
+
+        Focus on practical financial strategies for this {business_type} business in the {industry} industry.
         """
 
         try:
@@ -85,104 +132,202 @@ class FinancialAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert financial consultant specializing in small business finance, particularly in the food and beverage industry in Thailand.",
+                        "content": f"You are an expert financial consultant specializing in {business_type} business finance in the {industry} industry. Provide specific, actionable financial recommendations tailored to this business type and industry.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1200,
+                max_tokens=1500,
                 temperature=0.7,
             )
 
             financial_analysis_text = response.choices[0].message.content
 
-            # Structure the financial analysis
+            # Create dynamic financial analysis structure
             financial_analysis = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "financial_projections": {
                     "revenue_forecast": {
-                        "year_1": "2,500,000 THB",
-                        "year_2": "3,750,000 THB",
-                        "year_3": "5,000,000 THB",
+                        "year_1": (
+                            f"${initial_investment * 0.8:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "year_2": (
+                            f"${initial_investment * 1.2:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "year_3": (
+                            f"${initial_investment * 1.8:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                     },
                     "profit_margins": {
-                        "coffee_products": "65-70%",
-                        "food_items": "55-60%",
-                        "merchandise": "40-50%",
+                        f"{business_type}_services": "60-70%",
+                        f"{business_type}_products": "50-60%",
+                        f"{business_type}_consulting": "80-90%",
                     },
                     "monthly_revenue_targets": {
-                        "month_1_6": "150,000 THB",
-                        "month_7_12": "250,000 THB",
-                        "year_2": "312,500 THB",
+                        "month_1_6": (
+                            f"${initial_investment * 0.05:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "month_7_12": (
+                            f"${initial_investment * 0.08:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "year_2": (
+                            f"${initial_investment * 0.1:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                     },
                 },
                 "funding_requirements": {
                     "initial_investment": {
-                        "equipment": "800,000 THB",
-                        "renovation": "500,000 THB",
-                        "inventory": "200,000 THB",
-                        "marketing": "300,000 THB",
-                        "working_capital": "200,000 THB",
-                        "total": "2,000,000 THB",
+                        f"{business_type}_equipment": (
+                            f"${initial_investment * 0.4:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        f"{business_type}_facility": (
+                            f"${initial_investment * 0.25:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        f"{business_type}_inventory": (
+                            f"${initial_investment * 0.1:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "marketing": (
+                            f"${initial_investment * 0.15:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "working_capital": (
+                            f"${initial_investment * 0.1:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "total": (
+                            f"${initial_investment:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                     },
                     "funding_sources": [
                         {
                             "source": "Personal savings",
-                            "amount": "1,000,000 THB",
+                            "amount": (
+                                f"${initial_investment * 0.5:,.0f}"
+                                if initial_investment
+                                else "To be determined"
+                            ),
                             "percentage": "50%",
                         },
                         {
                             "source": "Bank loan",
-                            "amount": "800,000 THB",
+                            "amount": (
+                                f"${initial_investment * 0.4:,.0f}"
+                                if initial_investment
+                                else "To be determined"
+                            ),
                             "percentage": "40%",
                         },
                         {
                             "source": "Investor/Partner",
-                            "amount": "200,000 THB",
+                            "amount": (
+                                f"${initial_investment * 0.1:,.0f}"
+                                if initial_investment
+                                else "To be determined"
+                            ),
                             "percentage": "10%",
                         },
                     ],
                 },
                 "cost_structure": {
                     "fixed_costs": {
-                        "rent": "50,000 THB/month",
-                        "utilities": "15,000 THB/month",
-                        "insurance": "5,000 THB/month",
-                        "licenses": "2,000 THB/month",
-                        "total_fixed": "72,000 THB/month",
+                        "rent": (
+                            f"${initial_investment * 0.02:,.0f}/month"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "utilities": (
+                            f"${initial_investment * 0.005:,.0f}/month"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "insurance": (
+                            f"${initial_investment * 0.002:,.0f}/month"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "licenses": (
+                            f"${initial_investment * 0.001:,.0f}/month"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "total_fixed": (
+                            f"${initial_investment * 0.028:,.0f}/month"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                     },
                     "variable_costs": {
-                        "coffee_beans": "25% of revenue",
-                        "milk_and_syrups": "8% of revenue",
-                        "packaging": "5% of revenue",
-                        "labor": "30% of revenue",
-                        "total_variable": "68% of revenue",
+                        f"{business_type}_materials": "25% of revenue",
+                        f"{business_type}_labor": "30% of revenue",
+                        f"{business_type}_marketing": "10% of revenue",
+                        f"{business_type}_overhead": "15% of revenue",
+                        "total_variable": "80% of revenue",
                     },
                 },
                 "pricing_strategy": {
-                    "coffee_prices": {
-                        "espresso": "35-45 THB",
-                        "americano": "45-55 THB",
-                        "latte": "55-65 THB",
-                        "cappuccino": "55-65 THB",
-                        "specialty_drinks": "65-85 THB",
-                    },
-                    "food_prices": {
-                        "pastries": "45-65 THB",
-                        "sandwiches": "85-120 THB",
-                        "desserts": "65-95 THB",
+                    f"{business_type}_pricing": {
+                        f"basic_{business_type}_service": (
+                            f"${initial_investment * 0.001:,.0f}"
+                            if initial_investment
+                            else "Market-based pricing"
+                        ),
+                        f"premium_{business_type}_service": (
+                            f"${initial_investment * 0.002:,.0f}"
+                            if initial_investment
+                            else "Value-based pricing"
+                        ),
+                        f"{business_type}_consulting": (
+                            f"${initial_investment * 0.005:,.0f}"
+                            if initial_investment
+                            else "Hourly rate"
+                        ),
                     },
                     "pricing_factors": [
                         "Competitor analysis",
                         "Cost-plus pricing",
                         "Value-based pricing",
-                        "Premium positioning",
+                        f"{business_type} market positioning",
                     ],
                 },
                 "cash_flow_management": {
                     "daily_cash_flow": {
-                        "inflow": "8,000-12,000 THB",
-                        "outflow": "6,000-8,000 THB",
-                        "net": "2,000-4,000 THB",
+                        "inflow": (
+                            f"${initial_investment * 0.003:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "outflow": (
+                            f"${initial_investment * 0.002:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "net": (
+                            f"${initial_investment * 0.001:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                     },
                     "cash_reserves": "Maintain 3-6 months of operating expenses",
                     "payment_terms": {
@@ -193,47 +338,66 @@ class FinancialAgent:
                 },
                 "investment_opportunities": [
                     {
-                        "opportunity": "Equipment upgrade",
-                        "investment": "300,000 THB",
+                        "opportunity": f"{business_type} equipment upgrade",
+                        "investment": (
+                            f"${initial_investment * 0.15:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                         "roi": "15-20%",
                         "payback_period": "18-24 months",
                     },
                     {
-                        "opportunity": "Digital ordering system",
-                        "investment": "150,000 THB",
+                        "opportunity": f"{business_type} technology system",
+                        "investment": (
+                            f"${initial_investment * 0.075:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                         "roi": "25-30%",
                         "payback_period": "12-18 months",
                     },
                     {
-                        "opportunity": "Marketing campaign",
-                        "investment": "200,000 THB",
+                        "opportunity": f"{business_type} marketing campaign",
+                        "investment": (
+                            f"${initial_investment * 0.1:,.0f}"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                         "roi": "20-25%",
                         "payback_period": "6-12 months",
                     },
                 ],
                 "financial_risks": {
                     "market_risks": [
-                        "Economic downturn affecting discretionary spending",
-                        "Changes in coffee prices",
-                        "New competitors entering the market",
+                        f"Economic downturn affecting {business_type} demand",
+                        f"Changes in {industry} regulations",
+                        f"New {business_type} competitors entering the market",
                     ],
                     "operational_risks": [
-                        "Staff turnover and training costs",
-                        "Equipment breakdowns",
-                        "Supply chain disruptions",
+                        f"{business_type} staff turnover and training costs",
+                        f"{business_type} equipment breakdowns",
+                        f"{business_type} supply chain disruptions",
                     ],
                     "mitigation_strategies": [
-                        "Diversify revenue streams",
+                        f"Diversify {business_type} revenue streams",
                         "Build emergency fund",
-                        "Maintain good supplier relationships",
-                        "Invest in staff training and retention",
+                        f"Maintain good {business_type} supplier relationships",
+                        f"Invest in {business_type} staff training and retention",
                     ],
                 },
                 "break_even_analysis": {
-                    "monthly_fixed_costs": "72,000 THB",
-                    "average_contribution_margin": "32%",
-                    "break_even_revenue": "225,000 THB/month",
-                    "break_even_customers": "1,500 customers/month",
+                    "monthly_fixed_costs": (
+                        f"${initial_investment * 0.028:,.0f}"
+                        if initial_investment
+                        else "To be determined"
+                    ),
+                    "average_contribution_margin": "20%",
+                    "break_even_revenue": (
+                        f"${initial_investment * 0.14:,.0f}/month"
+                        if initial_investment
+                        else "To be determined"
+                    ),
                     "break_even_timeframe": "8-12 months",
                 },
                 "financial_kpis": [

@@ -56,23 +56,42 @@ class BusinessModelAgent:
         """Create comprehensive Business Model Canvas"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
         location = business_data.get("location", "")
+        description = business_data.get("description", "")
+        target_market = business_data.get("target_market", "")
         competitors = business_data.get("competitors", [])
         growth_goals = business_data.get("growth_goals", [])
+        industry = business_data.get("industry", "")
+        business_model = business_data.get("business_model", "")
+        market_size = business_data.get("market_size", "")
+        unique_value_proposition = business_data.get("unique_value_proposition", "")
+        initial_investment = business_data.get("initial_investment")
+        team_size = business_data.get("team_size")
 
-        # Create prompt for Business Model Canvas
+        # Create dynamic prompt for Business Model Canvas
         prompt = f"""
         As a business model expert, create a comprehensive Business Model Canvas for the following business:
 
-        Business Name: {business_name}
-        Location: {location}
-        Competitors: {', '.join(competitors)}
-        Growth Goals: {', '.join(growth_goals)}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Location: {location}
+        - Description: {description}
+        - Target Market: {target_market}
+        - Industry: {industry}
+        - Business Model: {business_model}
+        - Market Size: {market_size}
+        - Unique Value Proposition: {unique_value_proposition}
+        - Initial Investment: ${initial_investment:,.0f}" if initial_investment else "Not specified"
+        - Team Size: {team_size} employees" if team_size else "Not specified"
+        - Competitors: {', '.join(competitors)}
+        - Growth Goals: {', '.join(growth_goals)}
         
         Strategic Context: {strategic_plan.get('competitive_positioning', {}).get('unique_value_proposition', '')}
         SWOT Analysis Available: {bool(swot_analysis)}
 
-        Please create a detailed Business Model Canvas with all nine building blocks:
+        Please create a detailed Business Model Canvas specifically tailored for this {business_type} business in the {industry} industry with all nine building blocks:
 
         1. KEY PARTNERS - Who are our key partners and suppliers?
         2. KEY ACTIVITIES - What key activities does our value proposition require?
@@ -84,7 +103,7 @@ class BusinessModelAgent:
         8. COST STRUCTURE - What are the most important costs inherent in our business model?
         9. REVENUE STREAMS - For what value are our customers really willing to pay?
 
-        Focus on a coffee shop business in Thailand and provide specific, actionable details for each building block.
+        Focus on providing specific, actionable details for each building block that are relevant to this {business_type} business in the {industry} industry.
         """
 
         try:
@@ -94,72 +113,73 @@ class BusinessModelAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert business model consultant specializing in Business Model Canvas development for small businesses, particularly in the food and beverage industry in Thailand.",
+                        "content": f"You are an expert business model consultant specializing in Business Model Canvas development for {business_type} businesses in the {industry} industry. Provide specific, actionable details tailored to this business type and industry.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=2000,
+                max_tokens=2500,
                 temperature=0.7,
             )
 
             canvas_analysis_text = response.choices[0].message.content
 
-            # Structure the Business Model Canvas
+            # Create dynamic Business Model Canvas structure
             business_model_canvas = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "canvas_timestamp": datetime.now().isoformat(),
                 "key_partners": {
                     "suppliers": [
                         {
-                            "partner": "Coffee Bean Suppliers",
+                            "partner": f"{business_type.title()} Suppliers",
                             "type": "Strategic Supplier",
-                            "value": "Quality coffee beans and consistent supply",
+                            "value": f"Quality {business_type} materials and consistent supply",
                             "relationship": "Long-term contracts with volume discounts",
                         },
                         {
-                            "partner": "Equipment Suppliers",
+                            "partner": f"{business_type} Equipment Suppliers",
                             "type": "Service Provider",
-                            "value": "Coffee machines, grinders, and maintenance",
+                            "value": f"{business_type} equipment, tools, and maintenance",
                             "relationship": "Service contracts and training support",
                         },
                         {
-                            "partner": "Local Food Suppliers",
+                            "partner": f"Local {industry} Suppliers",
                             "type": "Local Partner",
-                            "value": "Fresh pastries, sandwiches, and ingredients",
+                            "value": f"Local {business_type} resources and materials",
                             "relationship": "Daily supply with quality assurance",
                         },
                     ],
                     "strategic_partners": [
                         {
-                            "partner": "Co-working Spaces",
+                            "partner": f"{industry} Industry Partners",
                             "type": "Business Partner",
-                            "value": "Regular corporate customers and events",
-                            "relationship": "Exclusive discounts and delivery services",
+                            "value": f"Regular customers and {business_type} opportunities",
+                            "relationship": "Exclusive discounts and service agreements",
                         },
                         {
-                            "partner": "Local Artists and Musicians",
-                            "type": "Creative Partner",
-                            "value": "Unique atmosphere and cultural events",
-                            "relationship": "Revenue sharing and exposure opportunities",
+                            "partner": f"{business_type} Experts and Consultants",
+                            "type": "Expert Partner",
+                            "value": f"Specialized {business_type} knowledge and expertise",
+                            "relationship": "Consulting fees and revenue sharing",
                         },
                         {
-                            "partner": "Tourism Agencies",
+                            "partner": f"Marketing and Promotion Partners",
                             "type": "Marketing Partner",
-                            "value": "Tourist customers and promotional opportunities",
+                            "value": f"Customer acquisition and promotional opportunities",
                             "relationship": "Commission-based referrals and packages",
                         },
                     ],
                     "technology_partners": [
                         {
-                            "partner": "POS System Providers",
+                            "partner": f"{business_type} Technology Providers",
                             "type": "Technology Partner",
-                            "value": "Point-of-sale and inventory management",
+                            "value": f"{business_type} specific software and systems",
                             "relationship": "Subscription-based service with support",
                         },
                         {
-                            "partner": "Delivery Platforms",
+                            "partner": f"Online Platform Partners",
                             "type": "Service Partner",
-                            "value": "Online ordering and delivery services",
+                            "value": f"Online {business_type} services and delivery",
                             "relationship": "Commission-based revenue sharing",
                         },
                     ],
@@ -167,34 +187,34 @@ class BusinessModelAgent:
                 "key_activities": {
                     "core_activities": [
                         {
-                            "activity": "Coffee Preparation and Quality Control",
-                            "description": "Expert coffee brewing and quality assurance",
+                            "activity": f"{business_type.title()} Service Delivery and Quality Control",
+                            "description": f"Expert {business_type} service delivery and quality assurance",
                             "importance": "Critical - Core value proposition",
-                            "resources_required": "Skilled baristas, quality equipment",
+                            "resources_required": f"Skilled {business_type} professionals, quality equipment",
                         },
                         {
                             "activity": "Customer Service and Relationship Building",
-                            "description": "Personalized service and community engagement",
+                            "description": "Personalized service and customer engagement",
                             "importance": "High - Competitive differentiation",
                             "resources_required": "Trained staff, CRM system",
                         },
                         {
-                            "activity": "Inventory and Supply Chain Management",
-                            "description": "Efficient procurement and stock management",
+                            "activity": f"{business_type} Operations and Supply Chain Management",
+                            "description": f"Efficient {business_type} operations and resource management",
                             "importance": "High - Cost control and quality",
-                            "resources_required": "Supplier relationships, inventory system",
+                            "resources_required": f"Supplier relationships, {business_type} systems",
                         },
                     ],
                     "supporting_activities": [
                         {
-                            "activity": "Marketing and Brand Development",
-                            "description": "Digital marketing, social media, and brand building",
+                            "activity": f"{business_type} Marketing and Brand Development",
+                            "description": f"Digital marketing, social media, and {business_type} brand building",
                             "importance": "Medium - Customer acquisition",
                             "resources_required": "Marketing expertise, content creation",
                         },
                         {
-                            "activity": "Staff Training and Development",
-                            "description": "Continuous training and skill development",
+                            "activity": f"{business_type} Staff Training and Development",
+                            "description": f"Continuous {business_type} training and skill development",
                             "importance": "Medium - Service quality",
                             "resources_required": "Training programs, mentorship",
                         },
@@ -209,61 +229,61 @@ class BusinessModelAgent:
                 "key_resources": {
                     "physical_resources": [
                         {
-                            "resource": "Prime Location",
+                            "resource": f"Prime {business_type} Location",
                             "type": "Physical",
-                            "description": "High-traffic location in Bangkok",
+                            "description": f"Strategic location in {location} for {business_type} operations",
                             "value": "Customer accessibility and visibility",
                         },
                         {
-                            "resource": "Coffee Equipment",
+                            "resource": f"{business_type} Equipment and Tools",
                             "type": "Physical",
-                            "description": "Professional coffee machines and tools",
-                            "value": "Quality coffee production capability",
+                            "description": f"Professional {business_type} equipment and specialized tools",
+                            "value": f"Quality {business_type} service delivery capability",
                         },
                         {
-                            "resource": "Store Interior and Atmosphere",
+                            "resource": f"{business_type} Facility and Environment",
                             "type": "Physical",
-                            "description": "Welcoming and comfortable space",
-                            "value": "Customer experience and retention",
+                            "description": f"Professional {business_type} facility and operational environment",
+                            "value": "Customer experience and service quality",
                         },
                     ],
                     "human_resources": [
                         {
-                            "resource": "Skilled Baristas",
+                            "resource": f"Skilled {business_type} Professionals",
                             "type": "Human",
-                            "description": "Expert coffee preparation and service",
+                            "description": f"Expert {business_type} service delivery and expertise",
                             "value": "Quality assurance and customer satisfaction",
                         },
                         {
                             "resource": "Management Team",
                             "type": "Human",
-                            "description": "Business operations and strategy",
+                            "description": f"{business_type} business operations and strategy",
                             "value": "Operational efficiency and growth",
                         },
                         {
-                            "resource": "Marketing Specialist",
+                            "resource": f"{business_type} Marketing Specialist",
                             "type": "Human",
-                            "description": "Digital marketing and brand development",
+                            "description": f"Digital marketing and {business_type} brand development",
                             "value": "Customer acquisition and brand awareness",
                         },
                     ],
                     "intellectual_resources": [
                         {
-                            "resource": "Coffee Knowledge and Expertise",
+                            "resource": f"{business_type} Knowledge and Expertise",
                             "type": "Intellectual",
-                            "description": "Deep understanding of coffee and brewing",
-                            "value": "Quality differentiation and customer education",
+                            "description": f"Deep understanding of {business_type} and {industry}",
+                            "value": f"Quality differentiation and customer education",
                         },
                         {
-                            "resource": "Local Market Knowledge",
+                            "resource": f"{industry} Market Knowledge",
                             "type": "Intellectual",
-                            "description": "Understanding of Thai coffee culture",
+                            "description": f"Understanding of {industry} market dynamics",
                             "value": "Market positioning and customer insights",
                         },
                         {
-                            "resource": "Business Processes and Systems",
+                            "resource": f"{business_type} Business Processes and Systems",
                             "type": "Intellectual",
-                            "description": "Standardized operations and quality control",
+                            "description": f"Standardized {business_type} operations and quality control",
                             "value": "Consistency and scalability",
                         },
                     ],

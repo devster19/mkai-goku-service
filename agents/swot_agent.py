@@ -52,22 +52,41 @@ class SWOTAgent:
         """Perform comprehensive SWOT analysis"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
         location = business_data.get("location", "")
+        description = business_data.get("description", "")
+        target_market = business_data.get("target_market", "")
         competitors = business_data.get("competitors", [])
         growth_goals = business_data.get("growth_goals", [])
+        industry = business_data.get("industry", "")
+        business_model = business_data.get("business_model", "")
+        market_size = business_data.get("market_size", "")
+        unique_value_proposition = business_data.get("unique_value_proposition", "")
+        initial_investment = business_data.get("initial_investment")
+        team_size = business_data.get("team_size")
 
-        # Create prompt for SWOT analysis
+        # Create dynamic prompt for SWOT analysis
         prompt = f"""
         As a business strategy expert, perform a comprehensive SWOT analysis for the following business:
 
-        Business Name: {business_name}
-        Location: {location}
-        Competitors: {', '.join(competitors)}
-        Growth Goals: {', '.join(growth_goals)}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Location: {location}
+        - Description: {description}
+        - Target Market: {target_market}
+        - Industry: {industry}
+        - Business Model: {business_model}
+        - Market Size: {market_size}
+        - Unique Value Proposition: {unique_value_proposition}
+        - Initial Investment: ${initial_investment:,.0f}" if initial_investment else "Not specified"
+        - Team Size: {team_size} employees" if team_size else "Not specified"
+        - Competitors: {', '.join(competitors)}
+        - Growth Goals: {', '.join(growth_goals)}
         
         Strategic Context: {strategic_plan.get('competitive_positioning', {}).get('unique_value_proposition', '')}
 
-        Please provide a detailed SWOT analysis including:
+        Please provide a detailed SWOT analysis specifically tailored for this {business_type} business in the {industry} industry:
 
         STRENGTHS (Internal Positive Factors):
         - What are the business's internal advantages?
@@ -93,7 +112,7 @@ class SWOTAgent:
         - What new competitors might emerge?
         - What economic or regulatory changes could impact the business?
 
-        For each category, provide specific, actionable insights relevant to a coffee shop business in Thailand.
+        For each category, provide specific, actionable insights relevant to this {business_type} business in the {industry} industry.
         """
 
         try:
@@ -103,46 +122,47 @@ class SWOTAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert business strategist specializing in SWOT analysis for small businesses, particularly in the food and beverage industry in Thailand.",
+                        "content": f"You are an expert business strategist specializing in SWOT analysis for {business_type} businesses in the {industry} industry. Provide specific, actionable insights tailored to this business type and industry.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1500,
+                max_tokens=2000,
                 temperature=0.7,
             )
 
             swot_analysis_text = response.choices[0].message.content
 
-            # Structure the SWOT analysis
+            # Create dynamic SWOT analysis structure
             swot_analysis = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "analysis_timestamp": datetime.now().isoformat(),
                 "strengths": {
                     "internal_advantages": [
-                        "Prime location in Bangkok with high foot traffic",
-                        "Quality-focused approach to coffee and service",
-                        "Strong local community connections",
+                        f"Strong {business_type} expertise and knowledge",
+                        f"Quality-focused approach to {business_type} services",
+                        f"Strategic location in {location}",
                         "Flexible business model adaptable to market changes",
                         "Personalized customer service and relationship building",
                     ],
                     "unique_resources": [
-                        "Local market knowledge and cultural understanding",
-                        "Established supplier relationships",
-                        "Skilled barista team with coffee expertise",
-                        "Community-oriented business approach",
-                        "Thai cultural integration in business model",
+                        f"Specialized {business_type} knowledge and skills",
+                        f"Established {industry} industry relationships",
+                        f"Skilled team with {business_type} expertise",
+                        f"Industry-specific business approach",
+                        f"Local market understanding in {location}",
                     ],
                     "competitive_advantages": [
-                        "Authentic Thai coffee experience",
-                        "Community-focused atmosphere",
+                        f"Authentic {business_type} experience",
+                        f"Industry-focused expertise",
                         "Personalized customer relationships",
-                        "Local market expertise",
+                        f"Local market knowledge in {location}",
                         "Flexible and adaptable operations",
                     ],
                     "core_competencies": [
-                        "Coffee quality and preparation",
+                        f"{business_type} quality and service delivery",
                         "Customer service excellence",
-                        "Community engagement",
+                        f"{industry} industry expertise",
                         "Local market understanding",
                         "Operational efficiency",
                     ],
@@ -150,13 +170,13 @@ class SWOTAgent:
                 "weaknesses": {
                     "internal_limitations": [
                         "Limited financial resources for expansion",
-                        "Small team size limiting operational capacity",
+                        f"Small team size limiting {business_type} operational capacity",
                         "Limited marketing budget and expertise",
                         "Dependency on key staff members",
                         "Limited technological infrastructure",
                     ],
                     "areas_for_improvement": [
-                        "Digital presence and online ordering system",
+                        f"Digital presence and {business_type} online services",
                         "Inventory management and cost control",
                         "Staff training and development programs",
                         "Marketing and brand awareness",
@@ -167,72 +187,72 @@ class SWOTAgent:
                         "Lack of specialized marketing expertise",
                         "Limited technology infrastructure",
                         "Insufficient data analytics capabilities",
-                        "Limited international market knowledge",
+                        f"Limited {industry} industry knowledge",
                     ],
                     "operational_challenges": [
-                        "Supply chain management complexity",
+                        f"{business_type} supply chain management complexity",
                         "Staff recruitment and retention",
-                        "Quality consistency across operations",
+                        f"{business_type} quality consistency across operations",
                         "Cost control and pricing optimization",
-                        "Regulatory compliance and licensing",
+                        f"{industry} regulatory compliance and licensing",
                     ],
                 },
                 "opportunities": {
                     "market_trends": [
-                        "Growing coffee culture in Thailand",
-                        "Increasing demand for specialty coffee",
-                        "Rising disposable income among target demographics",
-                        "Growing tourism industry in Bangkok",
-                        "Digital transformation in F&B sector",
+                        f"Growing {business_type} market demand",
+                        f"Increasing demand for quality {business_type} services",
+                        f"Rising disposable income among {target_market}",
+                        f"Growing {industry} industry in {location}",
+                        f"Digital transformation in {industry} sector",
                     ],
                     "external_factors": [
                         "Government support for small businesses",
-                        "Growing health consciousness and premium coffee demand",
-                        "Increasing remote work culture creating demand for cafe spaces",
+                        f"Growing demand for {business_type} services",
+                        f"Increasing {industry} industry opportunities",
                         "Social media marketing opportunities",
-                        "Partnership opportunities with local businesses",
+                        f"Partnership opportunities in {industry}",
                     ],
                     "growth_potential": [
-                        "Expansion to multiple locations",
-                        "Online ordering and delivery services",
-                        "Franchise opportunities",
-                        "Product diversification (coffee beans, merchandise)",
-                        "Corporate catering and events",
+                        f"Expansion of {business_type} operations",
+                        f"Online {business_type} services and delivery",
+                        f"Franchise opportunities in {business_type}",
+                        f"Product diversification in {industry}",
+                        f"Corporate {business_type} services",
                     ],
                     "strategic_opportunities": [
-                        "Partnerships with co-working spaces",
-                        "Collaboration with local artists and musicians",
-                        "Tourism-focused marketing campaigns",
-                        "Subscription and loyalty programs",
-                        "Educational coffee workshops and events",
+                        f"Partnerships with {industry} businesses",
+                        f"Collaboration with {business_type} experts",
+                        f"{industry}-focused marketing campaigns",
+                        f"Subscription and loyalty programs for {business_type}",
+                        f"Educational {business_type} workshops and events",
                     ],
                 },
                 "threats": {
                     "market_risks": [
-                        "Intense competition from established coffee chains",
-                        "Economic downturn affecting discretionary spending",
-                        "Changing consumer preferences and trends",
-                        "New competitors entering the market",
-                        "Fluctuating coffee bean prices",
+                        f"Intense competition from established {business_type} providers",
+                        "Economic downturn affecting customer spending",
+                        f"Changing {industry} industry preferences and trends",
+                        f"New {business_type} competitors entering the market",
+                        f"Fluctuating {industry} industry costs",
                     ],
                     "external_challenges": [
-                        "Regulatory changes affecting food service",
-                        "Supply chain disruptions and inflation",
+                        f"Regulatory changes affecting {industry}",
+                        f"{business_type} supply chain disruptions and inflation",
                         "Labor shortage and rising wages",
                         "Technology disruption and changing customer expectations",
-                        "Environmental regulations and sustainability requirements",
+                        f"Environmental regulations affecting {industry}",
                     ],
                     "competitive_threats": [
-                        "Large coffee chains with significant resources",
-                        "New specialty coffee shops opening nearby",
-                        "Online coffee delivery services",
-                        "Convenience stores expanding coffee offerings",
-                        "International coffee brands entering the market",
+                        f"Large {business_type} companies with significant resources",
+                        f"New {business_type} providers opening nearby",
+                        f"Online {business_type} service platforms",
+                        f"Established companies expanding {business_type} offerings",
+                        f"International {business_type} brands entering the market",
                     ],
                     "operational_risks": [
                         "Key staff turnover and knowledge loss",
-                        "Equipment failure and maintenance costs",
-                        "Food safety and quality control issues",
+                        f"{business_type} equipment failure and maintenance costs",
+                        f"{business_type} quality control issues",
                         "Cash flow problems and financial instability",
                         "Location-related issues (rent increases, redevelopment)",
                     ],

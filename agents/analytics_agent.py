@@ -60,12 +60,19 @@ class AnalyticsAgent:
         """Analyze all agent outputs and provide comprehensive insights"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
+        industry = business_data.get("industry", "")
+        description = business_data.get("description", "")
 
-        # Create prompt for comprehensive analysis
+        # Create dynamic prompt for comprehensive analysis
         prompt = f"""
         As a business analytics expert, analyze the following comprehensive business data and provide insights:
 
-        Business Name: {business_name}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Industry: {industry}
+        - Description: {description}
 
         Strategic Plan Summary:
         - Market positioning: {strategic_plan.get('competitive_positioning', {}).get('unique_value_proposition', 'N/A')}
@@ -87,17 +94,49 @@ class AnalyticsAgent:
         - Sales channels: {len(sales_strategy.get('sales_channels', {}))} channel types
         - Sales targets: {sales_strategy.get('sales_metrics', {}).get('targets', {})}
 
-        Please provide comprehensive analytics including:
-        1. Cross-functional insights and correlations
-        2. Risk assessment and mitigation strategies
-        3. Success probability analysis
-        4. Resource optimization recommendations
-        5. Timeline and milestone analysis
-        6. Competitive advantage assessment
-        7. Market opportunity analysis
-        8. Implementation priority matrix
+        Please provide comprehensive analytics specifically tailored for this {business_type} business in the {industry} industry, including:
 
-        Focus on actionable insights that can guide business decisions.
+        1. Cross-functional Insights and Correlations:
+           - Strategic-financial alignment analysis
+           - Creative-sales synergy assessment
+           - Resource optimization opportunities
+
+        2. Risk Assessment and Mitigation Strategies:
+           - High, medium, and low-risk factors
+           - Probability and impact analysis
+           - Mitigation strategies for each risk
+
+        3. Success Probability Analysis:
+           - Overall success rate assessment
+           - Contributing factors analysis
+           - Critical success factors identification
+
+        4. Resource Optimization Recommendations:
+           - Human resources optimization
+           - Financial resources allocation
+           - Technology and infrastructure needs
+
+        5. Timeline and Milestone Analysis:
+           - Implementation phases and timelines
+           - Key milestones and deliverables
+           - Critical path analysis
+
+        6. Competitive Advantage Assessment:
+           - Unique value proposition strength
+           - Competitive positioning analysis
+           - Differentiation opportunities
+
+        7. Market Opportunity Analysis:
+           - Market size and growth potential
+           - Customer segment opportunities
+           - Market entry timing
+
+        8. Implementation Priority Matrix:
+           - High-impact, low-effort initiatives
+           - Strategic priorities and sequencing
+           - Resource allocation recommendations
+
+        Focus on actionable insights that can guide business decisions for this {business_type} business in the {industry} industry.
         """
 
         try:
@@ -107,7 +146,7 @@ class AnalyticsAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert business analyst specializing in cross-functional analysis, risk assessment, and strategic insights for small businesses.",
+                        "content": f"You are an expert business analyst specializing in cross-functional analysis, risk assessment, and strategic insights for {business_type} businesses in the {industry} industry. Provide specific, actionable analytics tailored to this business type and industry.",
                     },
                     {"role": "user", "content": prompt},
                 ],
@@ -117,105 +156,110 @@ class AnalyticsAgent:
 
             analytics_text = response.choices[0].message.content
 
-            # Structure the analytics summary
+            # Create dynamic analytics summary structure
             analytics_summary = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "cross_functional_insights": {
                     "strategic_financial_alignment": {
-                        "insight": "Strong alignment between growth goals and financial projections",
+                        "insight": f"Strong alignment between {business_type} growth goals and financial projections",
                         "confidence": "85%",
-                        "recommendation": "Proceed with growth strategy as planned",
+                        "recommendation": f"Proceed with {business_type} growth strategy as planned",
                     },
                     "creative_sales_synergy": {
-                        "insight": "Creative campaigns align well with target customer segments",
+                        "insight": f"Creative campaigns align well with {business_type} target customer segments",
                         "confidence": "90%",
-                        "recommendation": "Implement integrated marketing-sales approach",
+                        "recommendation": f"Implement integrated {business_type} marketing-sales approach",
                     },
                     "resource_optimization": {
-                        "insight": "Marketing budget allocation supports sales targets",
+                        "insight": f"Marketing budget allocation supports {business_type} sales targets",
                         "confidence": "80%",
-                        "recommendation": "Monitor ROI and adjust budget allocation",
+                        "recommendation": f"Monitor {business_type} ROI and adjust budget allocation",
                     },
                 },
                 "risk_assessment": {
                     "high_risk_factors": [
                         {
-                            "factor": "Market competition",
+                            "factor": f"{business_type} market competition",
                             "probability": "70%",
                             "impact": "High",
-                            "mitigation": "Focus on unique value proposition and customer experience",
+                            "mitigation": f"Focus on unique {business_type} value proposition and customer experience",
                         },
                         {
-                            "factor": "Financial constraints",
+                            "factor": f"{business_type} financial constraints",
                             "probability": "60%",
                             "impact": "Medium",
-                            "mitigation": "Maintain cash reserves and diversify funding sources",
+                            "mitigation": f"Maintain cash reserves and diversify {business_type} funding sources",
                         },
                         {
-                            "factor": "Operational challenges",
+                            "factor": f"{business_type} operational challenges",
                             "probability": "50%",
                             "impact": "Medium",
-                            "mitigation": "Invest in training and technology",
+                            "mitigation": f"Invest in {business_type} training and technology",
                         },
                     ],
                     "medium_risk_factors": [
                         {
-                            "factor": "Supply chain disruptions",
+                            "factor": f"{business_type} supply chain disruptions",
                             "probability": "40%",
                             "impact": "Medium",
-                            "mitigation": "Build strong supplier relationships",
+                            "mitigation": f"Build strong {business_type} supplier relationships",
                         },
                         {
-                            "factor": "Staff turnover",
+                            "factor": f"{business_type} staff turnover",
                             "probability": "45%",
                             "impact": "Medium",
-                            "mitigation": "Implement retention strategies",
+                            "mitigation": f"Implement {business_type} retention strategies",
                         },
                     ],
                     "low_risk_factors": [
                         {
-                            "factor": "Regulatory changes",
+                            "factor": f"{business_type} regulatory changes",
                             "probability": "20%",
                             "impact": "Low",
-                            "mitigation": "Stay informed about industry regulations",
+                            "mitigation": f"Stay informed about {industry} regulations",
                         }
                     ],
                 },
                 "success_probability": {
                     "overall_success_rate": "75%",
                     "factors_contributing_to_success": [
-                        "Strong market demand for quality coffee",
-                        "Clear differentiation strategy",
-                        "Comprehensive financial planning",
-                        "Integrated marketing approach",
+                        f"Strong market demand for quality {business_type} services",
+                        f"Clear {business_type} differentiation strategy",
+                        f"Comprehensive {business_type} financial planning",
+                        f"Integrated {business_type} marketing approach",
                     ],
                     "critical_success_factors": [
-                        "Execution quality",
-                        "Customer experience delivery",
-                        "Financial discipline",
-                        "Adaptability to market changes",
+                        f"{business_type} execution quality",
+                        f"{business_type} customer experience delivery",
+                        f"{business_type} financial discipline",
+                        f"{business_type} adaptability to market changes",
                     ],
                 },
                 "resource_optimization": {
                     "human_resources": {
                         "optimal_staffing": "5-7 employees",
-                        "key_roles": ["Manager", "Baristas", "Marketing Specialist"],
+                        "key_roles": [
+                            f"{business_type.title()} Manager",
+                            f"{business_type.title()} Specialists",
+                            "Marketing Specialist",
+                        ],
                         "training_priorities": [
-                            "Customer service",
-                            "Product knowledge",
-                            "Sales techniques",
+                            f"{business_type} expertise and knowledge",
+                            "Customer service excellence",
+                            "Sales techniques and relationship building",
                         ],
                     },
                     "financial_resources": {
-                        "optimal_investment": "2,000,000 THB",
+                        "optimal_investment": "To be determined based on business scale",
                         "funding_mix": "50% personal, 40% loan, 10% investor",
                         "cash_flow_management": "Maintain 6-month reserve",
                     },
                     "technology_resources": {
                         "essential_systems": [
-                            "POS system",
-                            "Inventory management",
-                            "Online ordering",
+                            f"{business_type} management system",
+                            "Customer relationship management",
+                            f"{business_type} service delivery platform",
                         ],
                         "investment_priority": "High for operational efficiency",
                     },
@@ -224,113 +268,113 @@ class AnalyticsAgent:
                     "implementation_phases": {
                         "phase_1": {
                             "duration": "0-3 months",
-                            "focus": "Setup and launch",
+                            "focus": f"{business_type} setup and launch",
                             "key_milestones": [
-                                "Location setup",
-                                "Staff hiring",
-                                "Initial marketing",
+                                f"{business_type} infrastructure setup",
+                                f"{business_type} staff hiring",
+                                f"{business_type} initial marketing",
                             ],
                         },
                         "phase_2": {
                             "duration": "3-6 months",
-                            "focus": "Growth and optimization",
+                            "focus": f"{business_type} growth and optimization",
                             "key_milestones": [
-                                "Customer base building",
-                                "Process optimization",
-                                "Feedback integration",
+                                f"{business_type} customer base building",
+                                f"{business_type} process optimization",
+                                f"{business_type} feedback integration",
                             ],
                         },
                         "phase_3": {
                             "duration": "6-12 months",
-                            "focus": "Expansion and scaling",
+                            "focus": f"{business_type} expansion and scaling",
                             "key_milestones": [
-                                "Second location planning",
-                                "Digital expansion",
-                                "Partnership development",
+                                f"{business_type} second location planning",
+                                f"{business_type} digital expansion",
+                                f"{business_type} partnership development",
                             ],
                         },
                     },
                     "critical_path": [
-                        "Location selection and setup",
-                        "Staff recruitment and training",
-                        "Marketing campaign launch",
-                        "Customer acquisition and retention",
+                        f"{business_type} location selection and setup",
+                        f"{business_type} staff recruitment and training",
+                        f"{business_type} marketing campaign launch",
+                        f"{business_type} customer acquisition and retention",
                     ],
                 },
                 "competitive_advantage": {
                     "sustainable_advantages": [
-                        "Prime location in Bangkok",
-                        "Quality-focused approach",
-                        "Community-oriented business model",
-                        "Thai cultural integration",
+                        f"Prime location in Bangkok",
+                        f"Quality-focused {business_type} approach",
+                        f"Community-oriented {business_type} business model",
+                        f"Thai cultural integration",
                     ],
                     "competitive_positioning": {
                         "strength": "Strong",
                         "differentiation": "Clear",
                         "sustainability": "High",
                     },
-                    "market_position": "Premium quality with community focus",
+                    "market_position": f"Premium quality with community focus",
                 },
                 "market_opportunities": {
                     "immediate_opportunities": [
-                        "Growing coffee culture in Thailand",
-                        "Increasing demand for quality coffee",
-                        "Rising disposable income",
-                        "Digital transformation in F&B",
+                        f"Growing {business_type} culture in Thailand",
+                        f"Increasing demand for quality {business_type} services",
+                        f"Rising disposable income",
+                        f"Digital transformation in F&B",
                     ],
                     "future_opportunities": [
-                        "Franchise potential",
-                        "E-commerce expansion",
-                        "International market entry",
-                        "Product diversification",
+                        f"Franchise potential",
+                        f"E-commerce expansion",
+                        f"International market entry",
+                        f"Product diversification",
                     ],
                     "market_size": "Growing",
                     "growth_potential": "High",
                 },
                 "implementation_priority": {
                     "high_priority": [
-                        "Location setup and equipment installation",
-                        "Staff recruitment and training",
-                        "Marketing campaign development",
-                        "Financial management system setup",
+                        f"{business_type} location setup and equipment installation",
+                        f"{business_type} staff recruitment and training",
+                        f"{business_type} marketing campaign development",
+                        f"{business_type} financial management system setup",
                     ],
                     "medium_priority": [
-                        "Loyalty program implementation",
-                        "Digital platform development",
-                        "Supplier relationship building",
-                        "Quality control systems",
+                        f"{business_type} loyalty program implementation",
+                        f"{business_type} digital platform development",
+                        f"{business_type} supplier relationship building",
+                        f"{business_type} quality control systems",
                     ],
                     "low_priority": [
-                        "Expansion planning",
-                        "Franchise development",
-                        "International market research",
+                        f"{business_type} expansion planning",
+                        f"{business_type} franchise development",
+                        f"{business_type} international market research",
                     ],
                 },
                 "performance_metrics": {
                     "key_indicators": [
-                        "Monthly revenue growth",
-                        "Customer acquisition cost",
-                        "Customer lifetime value",
-                        "Employee satisfaction",
-                        "Customer satisfaction score",
-                        "Market share growth",
+                        f"Monthly {business_type} revenue growth",
+                        f"Customer acquisition cost",
+                        f"Customer lifetime value",
+                        f"Employee satisfaction",
+                        f"Customer satisfaction score",
+                        f"Market share growth",
                     ],
                     "target_benchmarks": {
-                        "revenue_growth": "15% monthly",
-                        "customer_retention": "70%",
-                        "profit_margin": "25%",
-                        "customer_satisfaction": "4.5/5",
+                        f"revenue_growth": "15% monthly",
+                        f"customer_retention": "70%",
+                        f"profit_margin": "25%",
+                        f"customer_satisfaction": "4.5/5",
                     },
                 },
                 "key_insights": [
-                    "Business has strong potential with 75% success probability",
-                    "Focus on execution quality and customer experience",
-                    "Maintain financial discipline and cash reserves",
-                    "Build strong community relationships",
-                    "Invest in technology for operational efficiency",
-                    "Monitor and adapt to market changes",
-                    "Prioritize staff training and retention",
-                    "Develop strong supplier partnerships",
+                    f"Business has strong potential with 75% success probability",
+                    f"Focus on {business_type} execution quality and customer experience",
+                    f"Maintain {business_type} financial discipline and cash reserves",
+                    f"Build strong community relationships",
+                    f"Invest in technology for operational efficiency",
+                    f"Monitor and adapt to market changes",
+                    f"Prioritize {business_type} staff training and retention",
+                    f"Develop strong {business_type} supplier partnerships",
                 ],
                 "ai_analysis": analytics_text,
             }
@@ -345,16 +389,16 @@ class AnalyticsAgent:
                 "risk_assessment": {
                     "high_risk_factors": [
                         {
-                            "factor": "Market competition",
-                            "mitigation": "Focus on differentiation",
+                            "factor": f"{business_type} market competition",
+                            "mitigation": f"Focus on differentiation",
                         }
                     ]
                 },
                 "key_insights": [
-                    "Business has strong potential",
-                    "Focus on execution quality",
-                    "Maintain financial discipline",
-                    "Build community relationships",
+                    f"Business has strong potential",
+                    f"Focus on {business_type} execution quality",
+                    f"Maintain {business_type} financial discipline",
+                    f"Build community relationships",
                 ],
             }
 

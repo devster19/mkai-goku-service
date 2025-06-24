@@ -52,32 +52,77 @@ class SalesAgent:
         """Analyze sales strategy and customer acquisition"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
         location = business_data.get("location", "")
+        description = business_data.get("description", "")
+        target_market = business_data.get("target_market", "")
         competitors = business_data.get("competitors", [])
         growth_goals = business_data.get("growth_goals", [])
+        industry = business_data.get("industry", "")
+        business_model = business_data.get("business_model", "")
+        unique_value_proposition = business_data.get("unique_value_proposition", "")
 
-        # Create prompt for sales analysis
+        # Create dynamic prompt for sales analysis
         prompt = f"""
         As a sales and customer acquisition expert, analyze the following business and provide sales strategy recommendations:
 
-        Business Name: {business_name}
-        Location: {location}
-        Competitors: {', '.join(competitors)}
-        Growth Goals: {', '.join(growth_goals)}
+        Business Information:
+        - Name: {business_name}
+        - Type: {business_type}
+        - Location: {location}
+        - Description: {description}
+        - Target Market: {target_market}
+        - Industry: {industry}
+        - Business Model: {business_model}
+        - Unique Value Proposition: {unique_value_proposition}
+        - Competitors: {', '.join(competitors)}
+        - Growth Goals: {', '.join(growth_goals)}
         
         Strategic Plan Context: {strategic_plan.get('competitive_positioning', {}).get('unique_value_proposition', '')}
 
-        Please provide sales analysis including:
-        1. Target customer segments and personas
-        2. Sales channels and distribution strategy
-        3. Customer acquisition strategies
-        4. Sales process and pipeline
-        5. Customer retention strategies
-        6. Sales team structure and training
-        7. Sales metrics and KPIs
-        8. Partnership and collaboration opportunities
+        Please provide sales analysis specifically tailored for this {business_type} business in the {industry} industry, including:
 
-        Focus on practical sales strategies for a coffee shop business in Thailand.
+        1. Target Customer Segments and Personas:
+           - Primary, secondary, and tertiary customer segments
+           - Detailed customer personas with demographics and psychographics
+           - Customer needs and pain points
+
+        2. Sales Channels and Distribution Strategy:
+           - Direct and indirect sales channels
+           - Digital and offline distribution methods
+           - Channel optimization strategies
+
+        3. Customer Acquisition Strategies:
+           - Digital marketing approaches
+           - Offline marketing tactics
+           - Lead generation methods
+
+        4. Sales Process and Pipeline:
+           - Customer journey mapping
+           - Sales techniques and methodologies
+           - Conversion optimization
+
+        5. Customer Retention Strategies:
+           - Loyalty programs and incentives
+           - Relationship building tactics
+           - Customer success initiatives
+
+        6. Sales Team Structure and Training:
+           - Team organization and roles
+           - Training and development programs
+           - Performance management
+
+        7. Sales Metrics and KPIs:
+           - Key performance indicators
+           - Sales forecasting and tracking
+           - ROI measurement
+
+        8. Partnership and Collaboration Opportunities:
+           - Strategic partnerships
+           - Channel partnerships
+           - Collaborative marketing opportunities
+
+        Focus on practical sales strategies for this {business_type} business in the {industry} industry.
         """
 
         try:
@@ -87,159 +132,167 @@ class SalesAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert sales consultant specializing in customer acquisition, retention, and sales strategy for the food and beverage industry in Thailand.",
+                        "content": f"You are an expert sales consultant specializing in customer acquisition, retention, and sales strategy for {business_type} businesses in the {industry} industry. Provide specific, actionable sales recommendations tailored to this business type and industry.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1200,
+                max_tokens=1500,
                 temperature=0.7,
             )
 
             sales_analysis_text = response.choices[0].message.content
 
-            # Structure the sales analysis
+            # Create dynamic sales strategy structure
             sales_strategy = {
                 "business_name": business_name,
+                "business_type": business_type,
                 "target_customer_segments": {
                     "primary_segment": {
-                        "name": "Young Professionals",
-                        "age_range": "25-40",
-                        "income": "30,000-80,000 THB/month",
+                        "name": f"{business_type.title()} Professionals",
+                        "age_range": "25-45",
+                        "income": "$50,000-$150,000/year",
                         "characteristics": [
-                            "Coffee enthusiasts",
-                            "Value quality and convenience",
-                            "Active on social media",
-                            "Willing to pay premium for quality",
+                            f"{business_type} enthusiasts",
+                            "Value quality and expertise",
+                            "Active on professional networks",
+                            f"Willing to pay premium for {business_type} services",
                         ],
                         "needs": [
-                            "High-quality coffee",
-                            "Convenient location",
-                            "Professional atmosphere",
-                            "Fast service",
+                            f"High-quality {business_type} services",
+                            "Professional expertise",
+                            "Reliable service delivery",
+                            "Convenient access",
                         ],
                     },
                     "secondary_segment": {
-                        "name": "Students",
-                        "age_range": "18-25",
-                        "income": "5,000-20,000 THB/month",
+                        "name": f"{business_type.title()} Startups",
+                        "age_range": "20-35",
+                        "income": "$30,000-$80,000/year",
                         "characteristics": [
                             "Budget-conscious",
-                            "Social media active",
-                            "Study/work in cafes",
-                            "Value atmosphere and WiFi",
+                            "Growth-focused",
+                            "Technology-savvy",
+                            f"Need {business_type} solutions",
                         ],
                         "needs": [
-                            "Affordable prices",
-                            "Study-friendly environment",
-                            "Free WiFi",
-                            "Group seating",
+                            "Affordable pricing",
+                            "Scalable solutions",
+                            "Quick implementation",
+                            "Flexible terms",
                         ],
                     },
                     "tertiary_segment": {
-                        "name": "Local Residents",
+                        "name": f"{business_type.title()} Enterprises",
                         "age_range": "30-60",
-                        "income": "20,000-100,000 THB/month",
+                        "income": "$100,000+",
                         "characteristics": [
-                            "Community-oriented",
-                            "Loyal customers",
-                            "Word-of-mouth advocates",
-                            "Value relationships",
+                            "Established businesses",
+                            "Long-term planning",
+                            "Comprehensive solutions",
+                            "Quality-focused",
                         ],
                         "needs": [
-                            "Friendly service",
-                            "Community atmosphere",
-                            "Consistent quality",
-                            "Local connection",
+                            "Comprehensive {business_type} services",
+                            "Long-term partnerships",
+                            "Custom solutions",
+                            "Professional support",
                         ],
                     },
                 },
                 "sales_channels": {
                     "direct_sales": {
-                        "in-store": "Primary channel for immediate revenue",
-                        "online_ordering": "Convenience for customers",
-                        "delivery": "Expand reach and convenience",
+                        "in-person": f"Primary channel for {business_type} consultations",
+                        "online_platforms": f"Digital {business_type} service delivery",
+                        "phone_sales": f"Direct {business_type} service inquiries",
                     },
                     "indirect_sales": {
-                        "corporate_orders": "Bulk orders for offices",
-                        "events_catering": "Weddings, corporate events",
-                        "wholesale": "Supply to other businesses",
+                        "partnerships": f"Collaborative {business_type} service delivery",
+                        "referrals": f"Client referral programs for {business_type}",
+                        "affiliates": f"Affiliate marketing for {business_type} services",
                     },
                     "digital_channels": {
-                        "social_media": "Instagram, Facebook, Line",
-                        "food_delivery_apps": "Grab Food, Food Panda",
-                        "website": "Online ordering and information",
+                        "social_media": f"LinkedIn, Facebook, Instagram for {business_type}",
+                        "content_marketing": f"{business_type} educational content",
+                        "email_marketing": f"{business_type} service promotions",
                     },
                 },
                 "customer_acquisition_strategies": {
                     "digital_marketing": [
                         {
-                            "strategy": "Social media advertising",
-                            "platforms": ["Facebook", "Instagram", "Line"],
-                            "targeting": "Local audience, coffee enthusiasts",
-                            "budget": "15,000 THB/month",
+                            "strategy": f"{business_type} social media advertising",
+                            "platforms": ["LinkedIn", "Facebook", "Instagram"],
+                            "targeting": f"Professional audience, {business_type} enthusiasts",
+                            "budget": "$2,000-$5,000/month",
                         },
                         {
-                            "strategy": "Google My Business optimization",
-                            "focus": "Local SEO and reviews",
-                            "budget": "5,000 THB/month",
+                            "strategy": f"{business_type} content marketing",
+                            "focus": f"{business_type} educational content and thought leadership",
+                            "budget": "$1,000-$3,000/month",
                         },
                         {
-                            "strategy": "Influencer partnerships",
-                            "approach": "Local food bloggers and coffee enthusiasts",
-                            "budget": "20,000 THB/month",
+                            "strategy": f"{business_type} influencer partnerships",
+                            "approach": f"Industry experts and {business_type} thought leaders",
+                            "budget": "$3,000-$8,000/month",
                         },
                     ],
                     "offline_marketing": [
                         {
-                            "strategy": "Local partnerships",
-                            "partners": ["Nearby offices", "Gyms", "Co-working spaces"],
-                            "approach": "Referral programs and discounts",
-                        },
-                        {
-                            "strategy": "Community events",
-                            "events": ["Coffee tastings", "Local markets", "Festivals"],
-                            "approach": "Brand visibility and sampling",
-                        },
-                        {
-                            "strategy": "Print advertising",
-                            "materials": [
-                                "Flyers",
-                                "Local magazines",
-                                "Community boards",
+                            "strategy": f"{business_type} industry partnerships",
+                            "partners": [
+                                f"Related {business_type} businesses",
+                                "Industry associations",
                             ],
-                            "budget": "10,000 THB/month",
+                            "approach": "Referral programs and collaborative marketing",
+                        },
+                        {
+                            "strategy": f"{business_type} industry events",
+                            "events": [
+                                f"{business_type} conferences",
+                                "Trade shows",
+                                "Networking events",
+                            ],
+                            "approach": "Brand visibility and lead generation",
+                        },
+                        {
+                            "strategy": f"{business_type} direct mail",
+                            "materials": [
+                                f"{business_type} service brochures",
+                                "Industry publications",
+                                "Professional directories",
+                            ],
+                            "budget": "$1,000-$2,000/month",
                         },
                     ],
                 },
                 "sales_process": {
                     "customer_journey": {
-                        "awareness": "Social media, local advertising, word-of-mouth",
-                        "consideration": "Online reviews, website, social media content",
-                        "purchase": "In-store visit, online ordering, delivery",
-                        "retention": "Loyalty program, personalized service, follow-up",
+                        "awareness": f"{business_type} content marketing, industry events, referrals",
+                        "consideration": f"{business_type} case studies, testimonials, consultations",
+                        "purchase": f"{business_type} service proposals, contract negotiations",
+                        "retention": f"{business_type} success programs, ongoing support, upselling",
                     },
                     "sales_techniques": [
-                        "Product knowledge training for staff",
-                        "Upselling and cross-selling techniques",
-                        "Customer relationship management",
-                        "Feedback collection and response",
+                        f"{business_type} expertise demonstration",
+                        "Solution-based selling approaches",
+                        "Relationship building and trust development",
+                        "Value proposition communication",
                     ],
                 },
                 "customer_retention": {
                     "loyalty_program": {
-                        "name": "Coffee Passport",
+                        "name": f"{business_type} Excellence Program",
                         "features": [
-                            "Points for every purchase",
-                            "Free drink after 10 purchases",
-                            "Birthday rewards",
-                            "Exclusive member events",
+                            f"Points for {business_type} service usage",
+                            f"Premium {business_type} service access",
+                            "Exclusive industry insights",
+                            f"Priority {business_type} support",
                         ],
-                        "technology": "Digital app with QR codes",
+                        "technology": "Digital platform with service tracking",
                     },
                     "relationship_building": [
                         "Remember customer names and preferences",
                         "Personalized recommendations",
-                        "Regular communication via Line",
+                        "Regular communication via social media",
                         "Exclusive member content",
                     ],
                     "feedback_management": [
@@ -252,11 +305,11 @@ class SalesAgent:
                 "sales_team": {
                     "structure": {
                         "manager": "1 full-time sales manager",
-                        "baristas": "3-5 part-time baristas with sales training",
+                        "team": "3-5 part-time sales team members",
                         "marketing_specialist": "1 part-time digital marketing specialist",
                     },
                     "training_program": [
-                        "Product knowledge and coffee expertise",
+                        "Product knowledge and industry-specific training",
                         "Customer service excellence",
                         "Sales techniques and upselling",
                         "Technology and POS systems",
@@ -337,12 +390,12 @@ class SalesAgent:
             return {
                 "business_name": business_name,
                 "target_customer_segments": {
-                    "primary": "Young professionals and students",
-                    "secondary": "Local residents",
+                    "primary": "Young professionals and startups",
+                    "secondary": "Local residents and enterprises",
                 },
                 "sales_channels": {
-                    "direct": "In-store sales",
-                    "digital": "Online ordering and delivery",
+                    "direct": "In-person consultations",
+                    "digital": "Online service delivery",
                 },
                 "customer_acquisition": [
                     "Social media marketing",

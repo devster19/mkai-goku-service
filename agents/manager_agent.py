@@ -50,10 +50,13 @@ class ManagerAgent:
         """Coordinate the analysis process and manage agent interactions"""
 
         business_name = business_data.get("business_name", "")
+        business_type = business_data.get("business_type", "")
+        industry = business_data.get("industry", "")
 
-        # Create management summary
+        # Create dynamic management summary
         management_summary = {
             "business_name": business_name,
+            "business_type": business_type,
             "process_coordination": {
                 "workflow_status": "Completed",
                 "agents_involved": [
@@ -115,14 +118,14 @@ class ManagerAgent:
                 ],
                 "business_risks": [
                     {
-                        "risk": "Market competition",
+                        "risk": f"{business_type} market competition",
                         "severity": "High",
-                        "mitigation": "Focus on differentiation and quality",
+                        "mitigation": f"Focus on {business_type} differentiation and quality",
                     },
                     {
-                        "risk": "Financial constraints",
+                        "risk": f"{business_type} financial constraints",
                         "severity": "Medium",
-                        "mitigation": "Conservative financial planning",
+                        "mitigation": f"Conservative {business_type} financial planning",
                     },
                 ],
             },
@@ -134,10 +137,10 @@ class ManagerAgent:
                     "Improve data validation and sanitization",
                 ],
                 "business_optimizations": [
-                    "Focus on execution quality",
-                    "Maintain financial discipline",
-                    "Build strong customer relationships",
-                    "Invest in technology and training",
+                    f"Focus on {business_type} execution quality",
+                    f"Maintain {business_type} financial discipline",
+                    f"Build strong {business_type} customer relationships",
+                    f"Invest in {business_type} technology and training",
                 ],
             },
             "next_steps": {
@@ -150,37 +153,37 @@ class ManagerAgent:
                 "short_term_goals": [
                     "Implement high-priority recommendations",
                     "Establish key performance indicators",
-                    "Begin marketing campaign execution",
-                    "Set up financial management systems",
+                    f"Begin {business_type} marketing campaign execution",
+                    f"Set up {business_type} financial management systems",
                 ],
                 "long_term_objectives": [
-                    "Achieve break-even within 8-12 months",
-                    "Expand to additional locations",
-                    "Develop strong brand presence",
-                    "Build sustainable competitive advantages",
+                    f"Achieve {business_type} break-even within 8-12 months",
+                    f"Expand {business_type} to additional locations",
+                    f"Develop strong {business_type} brand presence",
+                    f"Build sustainable {business_type} competitive advantages",
                 ],
             },
             "success_criteria": {
                 "operational_metrics": [
-                    "Monthly revenue targets met",
-                    "Customer satisfaction scores > 4.5/5",
-                    "Employee retention rate > 80%",
-                    "Cost control within budget",
+                    f"Monthly {business_type} revenue targets met",
+                    f"{business_type} customer satisfaction scores > 4.5/5",
+                    f"{business_type} employee retention rate > 80%",
+                    f"{business_type} cost control within budget",
                 ],
                 "strategic_metrics": [
-                    "Market share growth",
-                    "Brand recognition increase",
-                    "Customer loyalty program adoption",
-                    "Competitive positioning strength",
+                    f"{business_type} market share growth",
+                    f"{business_type} brand recognition increase",
+                    f"{business_type} customer loyalty program adoption",
+                    f"{business_type} competitive positioning strength",
                 ],
             },
             "management_insights": [
-                "The multi-agent system successfully provided comprehensive business analysis",
-                "All key business areas were thoroughly evaluated",
-                "Recommendations are actionable and well-aligned",
-                "Success probability is high with proper execution",
-                "Focus should be on implementation quality and customer experience",
-                "Regular monitoring and adaptation will be crucial for success",
+                f"The multi-agent system successfully provided comprehensive {business_type} business analysis",
+                f"All key {business_type} business areas were thoroughly evaluated",
+                f"{business_type} recommendations are actionable and well-aligned",
+                f"{business_type} success probability is high with proper execution",
+                f"Focus should be on {business_type} implementation quality and customer experience",
+                f"Regular {business_type} monitoring and adaptation will be crucial for success",
             ],
         }
 
