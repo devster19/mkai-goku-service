@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import httpx
 import asyncio
 import json
@@ -13,13 +14,39 @@ load_dotenv()
 
 app = FastAPI(title="Multi-Agent Business Analysis System", version="1.0.0")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 
 # Business input model
 class BusinessInput(BaseModel):
     business_name: str
+    business_type: str  # e.g., "coffee_shop", "restaurant", "retail_store", "tech_startup", "consulting_firm"
     location: str
+    description: str  # Brief description of the business
+    target_market: str  # Description of target customers
     competitors: List[str]
     growth_goals: List[str]
+    initial_investment: Optional[float] = None  # In local currency
+    team_size: Optional[int] = None
+    unique_value_proposition: Optional[str] = None
+    business_model: Optional[str] = (
+        None  # e.g., "b2c", "b2b", "marketplace", "subscription"
+    )
+    industry: Optional[str] = (
+        None  # e.g., "food_beverage", "technology", "retail", "services"
+    )
+    market_size: Optional[str] = (
+        None  # e.g., "local", "regional", "national", "international"
+    )
+    technology_requirements: Optional[List[str]] = None
+    regulatory_requirements: Optional[List[str]] = None
 
 
 # Response model

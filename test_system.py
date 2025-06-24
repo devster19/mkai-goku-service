@@ -9,15 +9,125 @@ import httpx
 import json
 import time
 from datetime import datetime
+import sys
 
 # Test configuration
 CORE_AGENT_URL = "http://localhost:5099"
-TEST_BUSINESS_DATA = {
-    "business_name": "ร้านกาแฟสดใจดี",
-    "location": "กรุงเทพมหานคร",
-    "competitors": ["ร้านกาแฟ Amazon", "ร้านกาแฟ All Cafe"],
-    "growth_goals": ["เพิ่มยอดขาย 50% ภายใน 1 ปี", "ขยายสาขาใหม่"],
+
+# Dynamic test business data examples
+TEST_BUSINESS_DATA_EXAMPLES = {
+    "coffee_shop": {
+        "business_name": "ร้านกาแฟสดใจดี",
+        "business_type": "coffee_shop",
+        "location": "กรุงเทพมหานคร",
+        "description": "A premium coffee shop offering high-quality coffee and pastries in a welcoming atmosphere",
+        "target_market": "Young professionals and students aged 20-35 who appreciate quality coffee and community atmosphere",
+        "competitors": ["ร้านกาแฟ Amazon", "ร้านกาแฟ All Cafe", "Starbucks"],
+        "growth_goals": ["เพิ่มยอดขาย 50% ภายใน 1 ปี", "ขยายสาขาใหม่ 2 สาขา", "เปิดบริการส่ง"],
+        "initial_investment": 50000.0,
+        "team_size": 8,
+        "unique_value_proposition": "Authentic Thai coffee experience with community focus",
+        "business_model": "b2c",
+        "industry": "food_beverage",
+        "market_size": "local",
+        "technology_requirements": [
+            "POS system",
+            "Inventory management",
+            "Online ordering",
+        ],
+        "regulatory_requirements": ["Food safety license", "Business registration"],
+    },
+    "tech_startup": {
+        "business_name": "TechFlow Solutions",
+        "business_type": "tech_startup",
+        "location": "San Francisco, CA",
+        "description": "AI-powered workflow automation platform for small businesses",
+        "target_market": "Small to medium businesses (10-500 employees) looking to automate repetitive tasks",
+        "competitors": ["Zapier", "Microsoft Power Automate", "Automation Anywhere"],
+        "growth_goals": [
+            "Reach 1000 customers in 12 months",
+            "Expand to European market",
+            "Launch mobile app",
+        ],
+        "initial_investment": 200000.0,
+        "team_size": 15,
+        "unique_value_proposition": "No-code AI automation specifically designed for small businesses",
+        "business_model": "b2b",
+        "industry": "technology",
+        "market_size": "national",
+        "technology_requirements": [
+            "Cloud infrastructure",
+            "AI/ML platform",
+            "Mobile app development",
+        ],
+        "regulatory_requirements": [
+            "Data protection compliance",
+            "SOC 2 certification",
+        ],
+    },
+    "restaurant": {
+        "business_name": "Fusion Bistro",
+        "business_type": "restaurant",
+        "location": "New York, NY",
+        "description": "Modern fusion restaurant combining Asian and European cuisines",
+        "target_market": "Food enthusiasts aged 25-45 with disposable income, seeking unique dining experiences",
+        "competitors": ["Momofuku", "Eleven Madison Park", "Le Bernardin"],
+        "growth_goals": [
+            "Achieve Michelin star recognition",
+            "Open second location",
+            "Launch catering service",
+        ],
+        "initial_investment": 300000.0,
+        "team_size": 25,
+        "unique_value_proposition": "Innovative fusion cuisine with seasonal ingredients and artistic presentation",
+        "business_model": "b2c",
+        "industry": "food_beverage",
+        "market_size": "local",
+        "technology_requirements": [
+            "Kitchen management system",
+            "Reservation platform",
+            "Inventory tracking",
+        ],
+        "regulatory_requirements": [
+            "Food safety certification",
+            "Liquor license",
+            "Health department permits",
+        ],
+    },
+    "ecommerce": {
+        "business_name": "EcoStyle Fashion",
+        "business_type": "ecommerce",
+        "location": "London, UK",
+        "description": "Sustainable fashion e-commerce platform selling eco-friendly clothing and accessories",
+        "target_market": "Environmentally conscious consumers aged 18-40 who prioritize sustainable fashion",
+        "competitors": ["Patagonia", "Reformation", "Everlane"],
+        "growth_goals": [
+            "Reach 50,000 customers",
+            "Expand to 10 European countries",
+            "Launch private label",
+        ],
+        "initial_investment": 150000.0,
+        "team_size": 12,
+        "unique_value_proposition": "Curated sustainable fashion with transparent supply chain and carbon-neutral shipping",
+        "business_model": "b2c",
+        "industry": "retail",
+        "market_size": "international",
+        "technology_requirements": [
+            "E-commerce platform",
+            "Payment processing",
+            "Inventory management",
+            "Shipping integration",
+        ],
+        "regulatory_requirements": [
+            "GDPR compliance",
+            "Consumer protection laws",
+            "Import/export regulations",
+        ],
+    },
 }
+
+# Default test data (coffee shop)
+TEST_BUSINESS_DATA = TEST_BUSINESS_DATA_EXAMPLES["coffee_shop"]
 
 
 async def test_health_endpoints():
@@ -86,6 +196,53 @@ async def test_business_analysis():
 
         except Exception as e:
             print(f"✗ Error during business analysis: {e}")
+            return False
+
+
+async def test_business_type(business_type: str):
+    """Test a specific business type"""
+    if business_type not in TEST_BUSINESS_DATA_EXAMPLES:
+        print(f"✗ Unknown business type: {business_type}")
+        print(f"Available types: {list(TEST_BUSINESS_DATA_EXAMPLES.keys())}")
+        return False
+
+    print(f"\n🚀 Testing {business_type} business analysis...")
+
+    # Use the specific business data
+    business_data = TEST_BUSINESS_DATA_EXAMPLES[business_type]
+    print(f"Business: {business_data['business_name']}")
+    print(f"Type: {business_data['business_type']}")
+    print(f"Location: {business_data['location']}")
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            start_time = time.time()
+
+            response = await client.post(
+                f"{CORE_AGENT_URL}/process-business",
+                json=business_data,
+                headers={"Content-Type": "application/json"},
+            )
+
+            end_time = time.time()
+            processing_time = end_time - start_time
+
+            if response.status_code == 200:
+                print(
+                    f"✓ {business_type} analysis completed in {processing_time:.2f} seconds"
+                )
+                result = response.json()
+                display_results(result)
+                return True
+            else:
+                print(
+                    f"✗ {business_type} analysis failed (Status: {response.status_code})"
+                )
+                print(f"Response: {response.text}")
+                return False
+
+        except Exception as e:
+            print(f"✗ Error during {business_type} analysis: {e}")
             return False
 
 
@@ -233,6 +390,24 @@ async def main():
     print("🧪 Multi-Agent Business Analysis System Test")
     print("=" * 50)
 
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        business_type = sys.argv[1].lower()
+        if business_type in TEST_BUSINESS_DATA_EXAMPLES:
+            print(f"🎯 Testing specific business type: {business_type}")
+            await test_business_type(business_type)
+            return
+        elif business_type == "all":
+            print("🔄 Testing all business types...")
+            for bt in TEST_BUSINESS_DATA_EXAMPLES.keys():
+                await test_business_type(bt)
+            return
+        else:
+            print(f"❌ Unknown business type: {business_type}")
+            print(f"Available types: {list(TEST_BUSINESS_DATA_EXAMPLES.keys())}")
+            print("Use 'all' to test all business types")
+            return
+
     # Wait for system to be ready
     print("⏳ Waiting for system to be ready...")
     await asyncio.sleep(5)
@@ -243,12 +418,18 @@ async def main():
     # Test individual agents
     await test_individual_agents()
 
-    # Test complete workflow
+    # Test complete workflow with default business type
     success = await test_business_analysis()
 
     if success:
         print("\n🎉 All tests completed successfully!")
         print("✅ The Multi-Agent Business Analysis System is working correctly.")
+        print("\n💡 To test different business types, run:")
+        print("   python test_system.py coffee_shop")
+        print("   python test_system.py tech_startup")
+        print("   python test_system.py restaurant")
+        print("   python test_system.py ecommerce")
+        print("   python test_system.py all")
     else:
         print("\n❌ Some tests failed.")
         print("🔧 Please check the system configuration and try again.")
