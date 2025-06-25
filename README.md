@@ -4,12 +4,44 @@ A sophisticated multi-agent system that provides comprehensive business analysis
 
 ## 🎯 Overview
 
-This system implements a Model Context Protocol (MCP) based multi-agent architecture where specialized AI agents collaborate to provide comprehensive business analysis. The system is designed to analyze business opportunities, particularly focused on the Thai market and coffee shop businesses.
+This system implements a Model Context Protocol (MCP) based multi-agent architecture where specialized AI agents collaborate to provide comprehensive business analysis. The system now supports **dynamic business input** for any type of business, not just coffee shops.
+
+## 🆕 New Features
+
+### Modern React Frontend
+- **React + Vite**: Fast, modern frontend built with React 18 and Vite
+- **Tailwind CSS**: Beautiful, responsive design with utility-first CSS
+- **Interactive Dashboard**: View and manage all business analyses
+- **Dynamic Forms**: Comprehensive business input form with real-time validation
+- **Results Viewer**: Interactive results display with tabbed sections
+- **Mobile Responsive**: Optimized for all device sizes
+
+### Dynamic Business Input
+- **Web Interface**: User-friendly React form for business input
+- **Multiple Business Types**: Support for coffee shops, restaurants, tech startups, e-commerce, and more
+- **Comprehensive Data Model**: Rich business information including industry, business model, technology requirements, etc.
+- **Flexible Analysis**: AI agents adapt their analysis based on business type and characteristics
+
+### Business Types Supported
+- Coffee Shops & Cafes
+- Restaurants
+- Retail Stores
+- Technology Startups
+- E-commerce Platforms
+- Consulting Firms
+- Manufacturing
+- Healthcare
+- Education
+- Real Estate
+- Fitness & Gym
+- Beauty Salons
+- Automotive
+- And more...
 
 ## 🏗️ Architecture
 
 ```
-User Input (HTTP POST) → FastAPI Core Agent (Python)
+React Frontend (Port 5173) → FastAPI Core Agent (Port 8000)
         |
         v
 Core Agent uses MCP Client to:
@@ -21,24 +53,27 @@ Core Agent uses MCP Client to:
 Receive responses from agents via MCP
         |
         v
-Aggregate results and respond back to user
+Aggregate results and respond back to frontend
 ```
 
 ### Agent Specializations
 
-1. **Strategic Agent** (Port 8001) - Business strategy and market positioning
-2. **Creative Agent** (Port 8002) - Marketing, branding, and creative strategy
-3. **Financial Agent** (Port 8003) - Financial analysis, projections, and planning
-4. **Sales Agent** (Port 8004) - Sales strategy and customer acquisition
-5. **Manager Agent** (Port 8005) - Process coordination and management
-6. **Analytics Agent** (Port 8006) - Comprehensive data analysis and insights
-7. **Core Agent** (Port 8000) - Main orchestrator and API gateway
+1. **Strategic Agent** (Port 5001) - Business strategy and market positioning
+2. **Creative Agent** (Port 5002) - Marketing, branding, and creative strategy
+3. **Financial Agent** (Port 5003) - Financial analysis, projections, and planning
+4. **Sales Agent** (Port 5004) - Sales strategy and customer acquisition
+5. **Manager Agent** (Port 5005) - Process coordination and management
+6. **Analytics Agent** (Port 5006) - Comprehensive data analysis and insights
+7. **SWOT Agent** (Port 5007) - SWOT analysis
+8. **Business Model Canvas Agent** (Port 5008) - Business model canvas creation
+9. **Core Agent** (Port 8000) - Main orchestrator and API gateway
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.8+
+- Node.js 18+
 - OpenAI API key
 - Virtual environment (recommended)
 
@@ -50,34 +85,71 @@ Aggregate results and respond back to user
    cd openai-multi-agents
    ```
 
-2. **Create and activate virtual environment**
+2. **Set up Python backend**
    ```bash
+   # Create and activate virtual environment
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
+   
+   # Install dependencies
    pip install -r requirements.txt
-   ```
-
-4. **Configure environment**
-   ```bash
+   
+   # Configure environment
    cp config.env.example .env
    # Edit .env file and add your OpenAI API key
    ```
 
-5. **Start the system**
+3. **Set up React frontend**
    ```bash
-   python start_agents.py
+   # Navigate to frontend directory
+   cd frontend
+   
+   # Install dependencies
+   npm install
    ```
+
+4. **Start the system**
+   ```bash
+   # Start the Python backend (from the main directory)
+   python start_agents.py
+   
+   # In a new terminal, start the React frontend
+   cd frontend
+   npm run dev
+   ```
+
+5. **Access the application**
+   - Frontend: `http://localhost:5173`
+   - Backend API: `http://localhost:8000`
+
+### Using the Web Interface
+
+1. **Open your browser** and go to `http://localhost:5173`
+
+2. **Dashboard**: View all your business analyses, search, and manage them
+
+3. **Create New Analysis**: Click "New Analysis" to fill out the comprehensive business form
+
+4. **View Results**: Click on any analysis to view detailed results with interactive tabs
 
 ### Testing the System
 
-Run the test script to verify everything is working:
-
+#### Test Default Business (Coffee Shop)
 ```bash
 python test_system.py
+```
+
+#### Test Specific Business Types
+```bash
+python test_system.py coffee_shop
+python test_system.py tech_startup
+python test_system.py restaurant
+python test_system.py ecommerce
+```
+
+#### Test All Business Types
+```bash
+python test_system.py all
 ```
 
 ## 📊 API Usage
@@ -88,14 +160,25 @@ python test_system.py
 
 Analyzes business data and returns comprehensive analysis.
 
-#### Request Body
+#### Request Body (Enhanced)
 
 ```json
 {
-  "business_name": "ร้านกาแฟสดใจดี",
-  "location": "กรุงเทพมหานคร",
-  "competitors": ["ร้านกาแฟ Amazon", "ร้านกาแฟ All Cafe"],
-  "growth_goals": ["เพิ่มยอดขาย 50% ภายใน 1 ปี", "ขยายสาขาใหม่"]
+  "business_name": "TechFlow Solutions",
+  "business_type": "tech_startup",
+  "location": "San Francisco, CA",
+  "description": "AI-powered workflow automation platform for small businesses",
+  "target_market": "Small to medium businesses (10-500 employees) looking to automate repetitive tasks",
+  "competitors": ["Zapier", "Microsoft Power Automate", "Automation Anywhere"],
+  "growth_goals": ["Reach 1000 customers in 12 months", "Expand to European market"],
+  "initial_investment": 200000.0,
+  "team_size": 15,
+  "unique_value_proposition": "No-code AI automation specifically designed for small businesses",
+  "business_model": "b2b",
+  "industry": "technology",
+  "market_size": "national",
+  "technology_requirements": ["Cloud infrastructure", "AI/ML platform", "Mobile app development"],
+  "regulatory_requirements": ["Data protection compliance", "SOC 2 certification"]
 }
 ```
 
@@ -103,7 +186,7 @@ Analyzes business data and returns comprehensive analysis.
 
 ```json
 {
-  "business_name": "ร้านกาแฟสดใจดี",
+  "business_name": "TechFlow Solutions",
   "timestamp": "2024-01-15T10:30:00",
   "strategic_plan": {
     "market_analysis": {...},
@@ -130,183 +213,119 @@ Analyzes business data and returns comprehensive analysis.
     "customer_acquisition_strategies": {...},
     "recommendations": [...]
   },
-  "analytics_summary": {
-    "success_probability": {...},
-    "risk_assessment": {...},
-    "key_insights": [...]
+  "swot_analysis": {
+    "strengths": {...},
+    "weaknesses": {...},
+    "opportunities": {...},
+    "threats": {...}
   },
-  "overall_recommendations": [...]
+  "business_model_canvas": {
+    "key_partners": [...],
+    "key_activities": [...],
+    "value_propositions": [...],
+    "customer_relationships": [...],
+    "customer_segments": [...],
+    "key_resources": [...],
+    "channels": [...],
+    "cost_structure": {...},
+    "revenue_streams": [...]
+  },
+  "analytics_summary": {
+    "market_size_estimate": {...},
+    "competitive_landscape": {...},
+    "trend_analysis": {...},
+    "risk_factors": [...],
+    "success_indicators": [...]
+  },
+  "overall_recommendations": [
+    "Focus on building strong partnerships with small business software providers",
+    "Develop a freemium model to attract initial users",
+    "Invest in customer success and support infrastructure",
+    "Consider strategic partnerships for market expansion"
+  ]
 }
 ```
 
-### Health Check
+### Additional Endpoints
 
-**GET** `/health`
+- **GET** `/get-all-businesses` - Retrieve all business analyses
+- **GET** `/search-businesses` - Search businesses by name or type
+- **GET** `/get-analysis/{business_id}` - Get specific analysis results
+- **DELETE** `/delete-business/{business_id}` - Delete a business analysis
+- **GET** `/health` - Health check endpoint
 
-Returns system health status.
+## 🎨 Frontend Features
 
-### API Documentation
+### Dashboard
+- **Business Grid**: View all analyses in a responsive card layout
+- **Search & Filter**: Find businesses by name, type, or other criteria
+- **Statistics**: Overview of total analyses, recent activity, etc.
+- **Actions**: View details, delete analyses, create new ones
 
-Visit `http://localhost:8000/docs` for interactive API documentation.
+### Business Form
+- **Dynamic Fields**: Add/remove competitors, goals, requirements
+- **Validation**: Real-time form validation with error messages
+- **Business Types**: Dropdown selection for different business categories
+- **Rich Input**: Text areas, number inputs, multi-select fields
 
-## 🔧 Configuration
+### Results Viewer
+- **Tabbed Interface**: Organized sections for different analysis types
+- **Interactive Charts**: Visual representation of data (future enhancement)
+- **Export Options**: Download results as PDF or JSON (future enhancement)
+- **Responsive Design**: Works on desktop, tablet, and mobile
 
-### Environment Variables
+## 🔧 Development
 
-Create a `.env` file with the following variables:
-
-```env
-# OpenAI API Configuration
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Agent URLs (default configuration)
-STRATEGIC_AGENT_URL=http://localhost:8001
-CREATIVE_AGENT_URL=http://localhost:8002
-FINANCIAL_AGENT_URL=http://localhost:8003
-SALES_AGENT_URL=http://localhost:8004
-MANAGER_AGENT_URL=http://localhost:8005
-ANALYTICS_AGENT_URL=http://localhost:8006
-
-# Core Agent Configuration
-CORE_AGENT_PORT=8000
-CORE_AGENT_HOST=0.0.0.0
-```
-
-## 🧪 Testing
-
-### Manual Testing with curl
-
+### Frontend Development
 ```bash
-curl -X POST "http://localhost:8000/process-business" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "business_name": "ร้านกาแฟสดใจดี",
-       "location": "กรุงเทพมหานคร",
-       "competitors": ["ร้านกาแฟ Amazon", "ร้านกาแฟ All Cafe"],
-       "growth_goals": ["เพิ่มยอดขาย 50% ภายใน 1 ปี", "ขยายสาขาใหม่"]
-     }'
+cd frontend
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
 ```
 
-### Automated Testing
-
+### Backend Development
 ```bash
-python test_system.py
+# Start individual agents for development
+python agents/strategic_agent.py
+python agents/creative_agent.py
+# ... etc
+
+# Or start all agents together
+python start_agents.py
 ```
+
+### Adding New Features
+1. **Frontend**: Add new components in `frontend/src/components/`
+2. **Backend**: Add new endpoints in `main.py`
+3. **Agents**: Create new agent files in `agents/` directory
 
 ## 📁 Project Structure
 
 ```
-openai-multi-agents/
-├── main.py                 # Core Agent (FastAPI application)
-├── start_agents.py         # Startup script for all agents
-├── test_system.py          # System testing script
-├── requirements.txt        # Python dependencies
-├── config.env.example      # Environment configuration template
-├── README.md              # This file
-└── agents/                # Individual agent servers
-    ├── __init__.py
-    ├── strategic_agent.py  # Strategic analysis agent
-    ├── creative_agent.py   # Creative/marketing agent
-    ├── financial_agent.py  # Financial analysis agent
-    ├── sales_agent.py      # Sales strategy agent
-    ├── manager_agent.py    # Process management agent
-    └── analytics_agent.py  # Data analytics agent
+mkai-multiagents/
+├── openai-multi-agents/          # Python backend
+│   ├── agents/                   # Individual agent modules
+│   ├── main.py                   # FastAPI application
+│   ├── database.py               # Database operations
+│   ├── requirements.txt          # Python dependencies
+│   └── README.md                 # Backend documentation
+├── frontend/                     # React frontend
+│   ├── src/
+│   │   ├── components/           # React components
+│   │   ├── App.jsx              # Main app component
+│   │   └── index.css            # Global styles
+│   ├── package.json             # Node.js dependencies
+│   └── README.md                # Frontend documentation
+└── README.md                    # This file
 ```
-
-## 🔄 Workflow
-
-1. **User submits business data** via HTTP POST to Core Agent
-2. **Core Agent validates input** and creates request ID
-3. **Strategic Agent analyzes** business strategy and positioning
-4. **Parallel processing** of Creative, Financial, and Sales agents
-5. **Analytics Agent synthesizes** all outputs for comprehensive insights
-6. **Core Agent aggregates** all results and generates overall recommendations
-7. **Response returned** to user with complete business analysis
-
-## 🎨 Features
-
-### Strategic Analysis
-- Market positioning strategy
-- Competitive advantage analysis
-- Growth strategy recommendations
-- Risk assessment and mitigation
-- Implementation timeline
-
-### Creative Analysis
-- Brand identity development
-- Marketing campaign ideas
-- Visual design suggestions
-- Content marketing strategy
-- Social media approach
-
-### Financial Analysis
-- Revenue projections and forecasts
-- Funding requirements and sources
-- Cost structure analysis
-- Pricing strategy recommendations
-- Break-even analysis
-
-### Sales Strategy
-- Target customer segmentation
-- Sales channels and distribution
-- Customer acquisition strategies
-- Retention and loyalty programs
-- Partnership opportunities
-
-### Analytics Integration
-- Cross-functional insights
-- Success probability analysis
-- Risk assessment
-- Resource optimization
-- Implementation priorities
-
-## 🛠️ Development
-
-### Adding New Agents
-
-1. Create a new agent file in the `agents/` directory
-2. Implement the MCP message interface
-3. Add agent configuration to `start_agents.py`
-4. Update the Core Agent to include the new agent
-
-### Customizing Agent Logic
-
-Each agent can be customized by modifying:
-- OpenAI prompts and system messages
-- Analysis structure and output format
-- Business logic and calculations
-- Integration with external APIs
-
-### Extending the System
-
-The modular architecture allows for:
-- Adding new business domains
-- Integrating with external data sources
-- Implementing caching and optimization
-- Adding authentication and authorization
-- Scaling to multiple instances
-
-## 🔒 Security Considerations
-
-- Store API keys securely in environment variables
-- Implement rate limiting for API endpoints
-- Add authentication for production use
-- Validate and sanitize all input data
-- Monitor system logs for suspicious activity
-
-## 📈 Performance
-
-- **Response Time**: 2-3 minutes for complete analysis
-- **Concurrent Requests**: Supports multiple simultaneous requests
-- **Scalability**: Can be scaled horizontally by adding agent instances
-- **Reliability**: Fallback responses when OpenAI API is unavailable
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for new functionality
+4. Test thoroughly
 5. Submit a pull request
 
 ## 📄 License
@@ -315,19 +334,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🆘 Support
 
-For issues and questions:
-1. Check the API documentation at `http://localhost:8000/docs`
-2. Review the test output for debugging information
-3. Check agent health endpoints for individual agent status
-4. Review system logs for detailed error information
-
-## 🔮 Future Enhancements
-
-- [ ] Database integration for storing analysis results
-- [ ] Real-time market data integration
-- [ ] Advanced analytics and machine learning models
-- [ ] Web-based dashboard for results visualization
-- [ ] Multi-language support
-- [ ] Integration with business planning tools
-- [ ] Automated report generation
-- [ ] Mobile application support 
+For support and questions:
+- Check the documentation in each directory
+- Review the API endpoints
+- Test with the provided examples 

@@ -139,7 +139,7 @@ def check_ports():
     """Check if required ports are available"""
     print("\n🔌 Checking port availability...")
 
-    ports = [5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008]
+    ports = [5099, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008]
     occupied_ports = []
 
     for port in ports:
@@ -254,7 +254,7 @@ def main():
         print("   2. Install dependencies: pip install -r requirements.txt")
         print("   3. Set up environment: python setup.py")
         print("   4. Configure OpenAI API key in .env file")
-        print("   5. Stop services using ports 5000-5008")
+        print("   5. Stop services using ports 5099-5008")
 
 
 if __name__ == "__main__":

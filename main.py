@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,11 +12,27 @@ import httpx
 import asyncio
 import json
 from datetime import datetime
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Import database module
+try:
+    from database import db
+
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+    print("⚠️ Database module not available. Business data will not be saved.")
+
+# Import task automation system
+try:
+    from task_automation import automation_engine
+
+    AUTOMATION_AVAILABLE = True
+    print("✅ Task automation module loaded successfully.")
+except ImportError:
+    AUTOMATION_AVAILABLE = False
+    print(
+        "⚠️ Task automation module not available. Automated tasks will not be created."
+    )
 
 app = FastAPI(title="Multi-Agent Business Analysis System", version="1.0.0")
 
@@ -53,6 +75,7 @@ class BusinessInput(BaseModel):
 class BusinessAnalysisResponse(BaseModel):
     business_name: str
     timestamp: str
+    business_id: Optional[str] = None  # Add business ID field
     strategic_plan: Dict[str, Any]
     creative_analysis: Dict[str, Any]
     financial_analysis: Dict[str, Any]
@@ -119,7 +142,7 @@ class CoreAgent:
         # Step 1: Send to Strategic Agent
         strategic_message = {
             "agent_type": "strategic",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "timestamp": datetime.now().isoformat(),
             "request_id": f"req_{datetime.now().timestamp()}",
         }
@@ -131,7 +154,7 @@ class CoreAgent:
         # Step 2: Send to SWOT Agent (can run in parallel with other agents)
         swot_message = {
             "agent_type": "swot",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "strategic_plan": strategic_response.get("strategic_plan", {}),
             "timestamp": datetime.now().isoformat(),
             "request_id": f"req_{datetime.now().timestamp()}",
@@ -144,7 +167,7 @@ class CoreAgent:
         # Step 3: Send to Business Model Canvas Agent (uses SWOT analysis)
         bmc_message = {
             "agent_type": "business_model",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "strategic_plan": strategic_response.get("strategic_plan", {}),
             "swot_analysis": swot_response.get("swot_analysis", {}),
             "timestamp": datetime.now().isoformat(),
@@ -161,7 +184,7 @@ class CoreAgent:
         # Creative Agent
         creative_message = {
             "agent_type": "creative",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "strategic_plan": strategic_response.get("strategic_plan", {}),
             "timestamp": datetime.now().isoformat(),
             "request_id": f"req_{datetime.now().timestamp()}",
@@ -175,7 +198,7 @@ class CoreAgent:
         # Financial Agent
         financial_message = {
             "agent_type": "financial",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "strategic_plan": strategic_response.get("strategic_plan", {}),
             "timestamp": datetime.now().isoformat(),
             "request_id": f"req_{datetime.now().timestamp()}",
@@ -189,7 +212,7 @@ class CoreAgent:
         # Sales Agent
         sales_message = {
             "agent_type": "sales",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "strategic_plan": strategic_response.get("strategic_plan", {}),
             "timestamp": datetime.now().isoformat(),
             "request_id": f"req_{datetime.now().timestamp()}",
@@ -205,7 +228,7 @@ class CoreAgent:
         # Step 5: Trigger Analytics with all data
         analytics_message = {
             "agent_type": "analytics",
-            "business_data": business_data.dict(),
+            "business_data": business_data.model_dump(),
             "strategic_plan": strategic_response.get("strategic_plan", {}),
             "creative_analysis": creative_response.get("creative_analysis", {}),
             "financial_analysis": financial_response.get("financial_analysis", {}),
@@ -235,6 +258,7 @@ class CoreAgent:
         return BusinessAnalysisResponse(
             business_name=business_data.business_name,
             timestamp=datetime.now().isoformat(),
+            business_id=None,  # Will be set after database save
             strategic_plan=strategic_response.get("strategic_plan", {}),
             creative_analysis=creative_response.get("creative_analysis", {}),
             financial_analysis=financial_response.get("financial_analysis", {}),
@@ -307,15 +331,132 @@ async def process_business(business_input: BusinessInput):
     """
     try:
         result = await core_agent.process_business_request(business_input)
+
+        # Save to database if available
+        if DATABASE_AVAILABLE:
+            try:
+                business_id = db.save_business(
+                    business_input.model_dump(), result.model_dump()
+                )
+                if business_id:
+                    print(f"✅ Business saved to database with ID: {business_id}")
+                    # Set the business ID in the response
+                    result.business_id = business_id
+
+                # Create automated tasks if automation is available
+                if AUTOMATION_AVAILABLE:
+                    try:
+                        await automation_engine.create_business_automation(
+                            business_id,
+                            business_input.business_name,
+                            business_input.business_type,
+                        )
+                        print(
+                            f"✅ Automation tasks created for business: {business_id}"
+                        )
+                    except Exception as auto_error:
+                        print(f"⚠️ Failed to create automation tasks: {auto_error}")
+
+            except Exception as db_error:
+                print(f"⚠️ Failed to save to database: {db_error}")
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
+@app.get("/get-analysis/{business_id}")
+async def get_analysis(business_id: str):
+    """
+    Get business analysis by ID
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        business = db.get_business(business_id)
+        analysis = db.get_analysis(business_id)
+
+        if not business:
+            raise HTTPException(status_code=404, detail="Business not found")
+
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+
+        return {"business": business, "analysis": analysis}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve analysis: {str(e)}"
+        )
+
+
+@app.get("/get-all-businesses")
+async def get_all_businesses(limit: int = 50):
+    """
+    Get all businesses with their analysis
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        businesses = db.get_all_businesses(limit)
+        return {"businesses": businesses}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve businesses: {str(e)}"
+        )
+
+
+@app.get("/search-businesses")
+async def search_businesses(q: str, business_type: str = None):
+    """
+    Search businesses by name, description, or industry
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        businesses = db.search_businesses(q, business_type)
+        return {"businesses": businesses}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to search businesses: {str(e)}"
+        )
+
+
+@app.delete("/delete-business/{business_id}")
+async def delete_business(business_id: str):
+    """
+    Delete business and its analysis
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        success = db.delete_business(business_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Business not found")
+
+        return {"message": "Business deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete business: {str(e)}"
+        )
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    db_status = "connected" if DATABASE_AVAILABLE and db.connect() else "disconnected"
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "database": db_status,
+    }
 
 
 @app.get("/")
@@ -336,6 +477,140 @@ async def root():
             "business_model": "Port 5008",
         },
     }
+
+
+# Automation API endpoints
+@app.get("/automation/summary")
+async def get_automation_summary():
+    """Get automation system summary"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    return automation_engine.get_automation_summary()
+
+
+@app.get("/automation/business/{business_id}/tasks")
+async def get_business_tasks(business_id: str):
+    """Get all automated tasks for a specific business"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    tasks = automation_engine.get_business_tasks(business_id)
+    return {
+        "business_id": business_id,
+        "tasks": [
+            {
+                "task_type": task.task_type,
+                "agent_type": task.agent_type,
+                "frequency": task.frequency.value,
+                "status": task.status.value,
+                "last_executed": (
+                    task.last_executed.isoformat() if task.last_executed else None
+                ),
+                "next_execution": (
+                    task.next_execution.isoformat() if task.next_execution else None
+                ),
+                "results": task.results,
+            }
+            for task in tasks
+        ],
+    }
+
+
+@app.get("/automation/business/{business_id}/goals")
+async def get_business_goals(business_id: str):
+    """Get all goals for a specific business"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    goals = automation_engine.get_business_goals(business_id)
+    return {
+        "business_id": business_id,
+        "goals": [
+            {
+                "goal_type": goal.goal_type,
+                "target_value": goal.target_value,
+                "current_value": goal.current_value,
+                "progress_percentage": (
+                    (goal.current_value / goal.target_value) * 100
+                    if goal.target_value > 0
+                    else 0
+                ),
+                "deadline": goal.deadline.isoformat(),
+                "status": goal.status,
+                "last_updated": goal.last_updated.isoformat(),
+            }
+            for goal in goals
+        ],
+    }
+
+
+@app.post("/automation/business/{business_id}/check-goals")
+async def check_business_goals(business_id: str):
+    """Check if business goals are being achieved and trigger re-analysis if needed"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    result = await automation_engine.check_goal_achievement(business_id)
+    return result
+
+
+@app.post("/automation/start")
+async def start_automation_scheduler():
+    """Start the automation scheduler"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # Start scheduler in background
+        asyncio.create_task(automation_engine.run_scheduler())
+        return {"message": "Automation scheduler started successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to start scheduler: {str(e)}"
+        )
+
+
+@app.post("/automation/stop")
+async def stop_automation_scheduler():
+    """Stop the automation scheduler"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        automation_engine.stop_scheduler()
+        return {"message": "Automation scheduler stopped successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to stop scheduler: {str(e)}"
+        )
+
+
+@app.post("/automation/task/{business_id}/execute")
+async def execute_specific_task(business_id: str, task_type: str, agent_type: str):
+    """Execute a specific task for a business"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # Find the task
+        tasks = automation_engine.get_business_tasks(business_id)
+        task = next(
+            (
+                t
+                for t in tasks
+                if t.task_type == task_type and t.agent_type == agent_type
+            ),
+            None,
+        )
+
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        await automation_engine.execute_task(task)
+        return {"message": f"Task {task_type} executed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to execute task: {str(e)}")
 
 
 if __name__ == "__main__":

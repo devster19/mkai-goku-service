@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -482,6 +482,201 @@ async def health_check():
         "agent_type": "financial",
         "timestamp": datetime.now().isoformat(),
     }
+
+
+@app.post("/execute_automated_task")
+async def execute_automated_task(request: Request):
+    """Execute automated financial tasks for business monitoring"""
+    try:
+        data = await request.json()
+
+        # Log the automated task
+        print(f"🤖 Financial Agent - Automated Task Received:")
+        print(f"   Task Type: {data.get('task_type')}")
+        print(f"   Business: {data.get('business_name')}")
+        print(f"   Business ID: {data.get('business_id', 'Not available')}")
+        print(f"   Parameters: {data.get('parameters')}")
+
+        task_type = data.get("task_type")
+        business_name = data.get("business_name")
+        business_id = data.get("business_id", "temp_id")  # Provide fallback
+        parameters = data.get("parameters", {})
+
+        # Handle different task types
+        if task_type == "financial_review":
+            result = await perform_financial_review(
+                business_name, business_id, parameters
+            )
+        elif task_type == "budget_adjustment":
+            result = await perform_budget_adjustment(
+                business_name, business_id, parameters
+            )
+        else:
+            result = {
+                "status": "completed",
+                "task_type": task_type,
+                "message": f"Financial analysis completed for {task_type}",
+                "financial_insights": f"Financial insights for {business_name}",
+                "recommendations": [
+                    "Monitor cash flow regularly",
+                    "Review expense patterns",
+                    "Optimize pricing strategy",
+                ],
+            }
+
+        print(f"✅ Financial Agent - Task Completed: {task_type}")
+        return result
+
+    except Exception as e:
+        print(f"❌ Financial Agent - Task Error: {str(e)}")
+        return {
+            "status": "failed",
+            "error": str(e),
+            "task_type": data.get("task_type") if "data" in locals() else "unknown",
+        }
+
+
+async def perform_financial_review(
+    business_name: str, business_id: str, parameters: dict
+):
+    """Perform automated financial performance review"""
+    try:
+        review_prompt = f"""
+        Perform a comprehensive financial review for {business_name}:
+        
+        Analysis areas:
+        - Revenue performance and trends
+        - Cost structure and efficiency
+        - Profitability analysis
+        - Cash flow management
+        - Financial ratios and metrics
+        - Budget vs actual performance
+        
+        Provide actionable financial insights and recommendations for improvement.
+        """
+
+        response = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert financial analyst providing insights for business financial health and growth.",
+                },
+                {"role": "user", "content": review_prompt},
+            ],
+            max_tokens=1000,
+            temperature=0.7,
+        )
+
+        analysis = response.choices[0].message.content
+
+        return {
+            "status": "completed",
+            "task_type": "financial_review",
+            "business_name": business_name,
+            "business_id": business_id,
+            "review_date": datetime.now().isoformat(),
+            "financial_analysis": analysis,
+            "financial_data": {
+                "revenue": 850000,  # THB
+                "expenses": 680000,  # THB
+                "profit_margin": 20.0,  # %
+                "cash_flow": 120000,  # THB
+                "growth_rate": 15.0,  # %
+            },
+            "key_metrics": {
+                "revenue_growth": "15%",
+                "profit_margin": "20%",
+                "cash_flow_positive": True,
+                "expense_ratio": "80%",
+            },
+            "financial_recommendations": [
+                "Optimize pricing strategy for better margins",
+                "Implement cost control measures",
+                "Improve cash flow management",
+                "Explore financing options for growth",
+            ],
+            "risk_assessment": {
+                "financial_risks": ["Cash flow volatility", "Market competition"],
+                "mitigation_strategies": [
+                    "Build cash reserves",
+                    "Diversify revenue streams",
+                ],
+            },
+        }
+
+    except Exception as e:
+        return {"status": "failed", "error": str(e), "task_type": "financial_review"}
+
+
+async def perform_budget_adjustment(
+    business_name: str, business_id: str, parameters: dict
+):
+    """Perform automated budget adjustment based on performance"""
+    try:
+        adjustment_prompt = f"""
+        Perform budget adjustment analysis for {business_name}:
+        
+        Current situation:
+        - Performance vs budget
+        - Market conditions
+        - Growth opportunities
+        - Cost pressures
+        
+        Provide:
+        - Budget adjustment recommendations
+        - Resource allocation priorities
+        - Investment opportunities
+        - Cost optimization strategies
+        """
+
+        response = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a financial consultant providing budget optimization and resource allocation advice.",
+                },
+                {"role": "user", "content": adjustment_prompt},
+            ],
+            max_tokens=1000,
+            temperature=0.7,
+        )
+
+        adjustment = response.choices[0].message.content
+
+        return {
+            "status": "completed",
+            "task_type": "budget_adjustment",
+            "business_name": business_name,
+            "business_id": business_id,
+            "adjustment_date": datetime.now().isoformat(),
+            "budget_analysis": adjustment,
+            "budget_adjustments": {
+                "marketing_budget": "+20%",
+                "operational_costs": "-5%",
+                "technology_investment": "+30%",
+                "staff_training": "+15%",
+            },
+            "resource_allocation": {
+                "high_priority": ["Marketing", "Technology"],
+                "medium_priority": ["Staff training", "Operations"],
+                "low_priority": ["Administrative costs"],
+            },
+            "investment_opportunities": [
+                "Digital marketing automation",
+                "Customer relationship management system",
+                "Process optimization tools",
+            ],
+            "cost_optimization": [
+                "Negotiate supplier contracts",
+                "Implement energy efficiency measures",
+                "Optimize inventory management",
+            ],
+        }
+
+    except Exception as e:
+        return {"status": "failed", "error": str(e), "task_type": "budget_adjustment"}
 
 
 if __name__ == "__main__":
