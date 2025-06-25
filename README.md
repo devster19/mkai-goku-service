@@ -90,10 +90,10 @@ Aggregate results and respond back to frontend
    # Create and activate virtual environment
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
+
    # Install dependencies
    pip install -r requirements.txt
-   
+
    # Configure environment
    cp config.env.example .env
    # Edit .env file and add your OpenAI API key

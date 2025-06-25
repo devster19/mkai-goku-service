@@ -94,20 +94,24 @@ async def start_all_agents():
     print("🚀 Starting Multi-Agent Business Analysis System...")
     print("=" * 50)
 
-    # Check if virtual environment is activated
-    if not hasattr(sys, "real_prefix") and not (
+    # Check if virtual environment is activated (but don't fail if not)
+    venv_activated = hasattr(sys, "real_prefix") or (
         hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
-    ):
-        print("⚠️  Virtual environment not detected. Please activate it first:")
-        print("   source venv/bin/activate  # On Unix/macOS")
-        print("   venv\\Scripts\\activate     # On Windows")
-        return False
+    )
+
+    if not venv_activated:
+        print("⚠️  Virtual environment not detected, but continuing...")
+        print("   For best results, activate: source venv/bin/activate")
+    else:
+        print("✓ Virtual environment detected")
 
     # Check if .env file exists
     if not os.path.exists(".env"):
         print("❌ .env file not found. Please run setup first:")
         print("   python setup.py")
         return False
+
+    print("✓ .env file found")
 
     print("\n📋 Agent Configuration:")
     for agent in AGENTS:

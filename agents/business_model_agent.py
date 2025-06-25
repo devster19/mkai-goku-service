@@ -290,10 +290,10 @@ class BusinessModelAgent:
                 },
                 "value_propositions": {
                     "primary_value": {
-                        "proposition": "High-Quality Coffee Experience",
-                        "description": "Premium coffee with expert preparation",
-                        "target_customer": "Coffee enthusiasts and quality seekers",
-                        "differentiation": "Expert baristas and quality beans",
+                        "proposition": f"High-Quality {business_type} Experience",
+                        "description": f"Premium {business_type} with expert delivery",
+                        "target_customer": f"{business_type} enthusiasts and quality seekers",
+                        "differentiation": f"Expert {business_type} professionals and quality standards",
                     },
                     "secondary_values": [
                         {
@@ -306,7 +306,7 @@ class BusinessModelAgent:
                             "proposition": "Convenient Location",
                             "description": "Accessible location with extended hours",
                             "target_customer": "Busy professionals and students",
-                            "differentiation": "Prime Bangkok location",
+                            "differentiation": f"Prime {location} location",
                         },
                         {
                             "proposition": "Personalized Service",
@@ -316,11 +316,11 @@ class BusinessModelAgent:
                         },
                     ],
                     "unique_features": [
-                        "Thai-inspired coffee blends",
-                        "Local art and cultural events",
-                        "Educational coffee workshops",
-                        "Community bulletin board",
-                        "Seasonal Thai festival celebrations",
+                        f"{business_type}-specific expertise and knowledge",
+                        "Local market understanding and cultural integration",
+                        f"Educational {business_type} workshops and events",
+                        "Community engagement and local partnerships",
+                        f"Seasonal {business_type} promotions and events",
                     ],
                 },
                 "customer_relationships": {
@@ -347,9 +347,9 @@ class BusinessModelAgent:
                     "loyalty_strategies": [
                         {
                             "strategy": "Loyalty Program",
-                            "description": "Coffee Passport with rewards and challenges",
+                            "description": f"{business_type.title()} Passport with rewards and challenges",
                             "implementation": "Digital app with QR codes",
-                            "benefits": "Points, free drinks, exclusive events",
+                            "benefits": "Points, free services, exclusive events",
                         },
                         {
                             "strategy": "Personalization",
@@ -359,8 +359,8 @@ class BusinessModelAgent:
                         },
                         {
                             "strategy": "Exclusive Content",
-                            "description": "Member-only events and educational content",
-                            "implementation": "Regular workshops and events",
+                            "description": f"Member-only events and {business_type} educational content",
+                            "implementation": f"Regular {business_type} workshops and events",
                             "benefits": "Community building and education",
                         },
                     ],
@@ -388,14 +388,14 @@ class BusinessModelAgent:
                             "costs": "Content creation, advertising",
                         },
                         {
-                            "channel": "Food Delivery Apps",
-                            "description": "Grab Food, Food Panda for delivery",
+                            "channel": f"{business_type} Delivery Apps",
+                            "description": f"Delivery platforms for {business_type} services",
                             "advantages": "Extended reach, convenience",
                             "costs": "Commission fees, packaging",
                         },
                         {
                             "channel": "Partnerships",
-                            "description": "Co-working spaces, local businesses",
+                            "description": f"Co-working spaces, local {business_type} businesses",
                             "advantages": "Targeted customers, credibility",
                             "costs": "Discounts, relationship management",
                         },
@@ -412,13 +412,13 @@ class BusinessModelAgent:
                         {
                             "segment": "Young Professionals",
                             "characteristics": "25-40 years, 30,000-80,000 THB/month income",
-                            "needs": "Quality coffee, convenience, professional atmosphere",
+                            "needs": f"Quality {business_type} services, convenience, professional atmosphere",
                             "value_drivers": "Quality, speed, status, convenience",
                         },
                         {
                             "segment": "Students",
                             "characteristics": "18-25 years, 5,000-20,000 THB/month income",
-                            "needs": "Affordable prices, study environment, WiFi",
+                            "needs": f"Affordable {business_type} prices, study environment, WiFi",
                             "value_drivers": "Price, atmosphere, functionality",
                         },
                     ],
@@ -426,13 +426,13 @@ class BusinessModelAgent:
                         {
                             "segment": "Local Residents",
                             "characteristics": "30-60 years, community-oriented",
-                            "needs": "Friendly service, community atmosphere, consistency",
+                            "needs": f"Friendly {business_type} service, community atmosphere, consistency",
                             "value_drivers": "Relationships, community, reliability",
                         },
                         {
                             "segment": "Tourists",
                             "characteristics": "International visitors, cultural interest",
-                            "needs": "Authentic experience, cultural connection, quality",
+                            "needs": f"Authentic {business_type} experience, cultural connection, quality",
                             "value_drivers": "Authenticity, experience, quality",
                         },
                     ],
@@ -465,9 +465,9 @@ class BusinessModelAgent:
                     ],
                     "variable_costs": [
                         {
-                            "cost": "Coffee Beans",
+                            "cost": f"{business_type.title()} Materials",
                             "percentage": "25% of revenue",
-                            "description": "Raw materials for coffee products",
+                            "description": f"Raw materials for {business_type} products",
                             "management": "Supplier relationships and bulk purchasing",
                         },
                         {
@@ -493,14 +493,14 @@ class BusinessModelAgent:
                 "revenue_streams": {
                     "primary_streams": [
                         {
-                            "stream": "Coffee Sales",
-                            "description": "Espresso, lattes, specialty drinks",
+                            "stream": f"{business_type.title()} Sales",
+                            "description": f"Core {business_type} products and services",
                             "pricing_model": "Value-based pricing",
                             "revenue_potential": "60% of total revenue",
                         },
                         {
-                            "stream": "Food Sales",
-                            "description": "Pastries, sandwiches, desserts",
+                            "stream": "Additional Services",
+                            "description": f"Complementary {business_type} services and products",
                             "pricing_model": "Cost-plus pricing",
                             "revenue_potential": "25% of total revenue",
                         },
@@ -508,13 +508,13 @@ class BusinessModelAgent:
                     "secondary_streams": [
                         {
                             "stream": "Merchandise",
-                            "description": "Coffee beans, mugs, branded items",
+                            "description": f"{business_type} related products and branded items",
                             "pricing_model": "Premium pricing",
                             "revenue_potential": "10% of total revenue",
                         },
                         {
-                            "stream": "Events and Workshops",
-                            "description": "Coffee tastings, barista workshops",
+                            "stream": f"{business_type.title()} Events and Workshops",
+                            "description": f"{business_type} tastings, workshops, and educational events",
                             "pricing_model": "Experience-based pricing",
                             "revenue_potential": "5% of total revenue",
                         },
@@ -560,22 +560,30 @@ class BusinessModelAgent:
             return {
                 "business_name": business_name,
                 "key_partners": {
-                    "suppliers": ["Coffee bean suppliers", "Equipment suppliers"]
+                    "suppliers": [f"{business_type} suppliers", "Equipment suppliers"]
                 },
                 "key_activities": {
-                    "core_activities": ["Coffee preparation", "Customer service"]
+                    "core_activities": [
+                        f"{business_type} service delivery",
+                        "Customer service",
+                    ]
                 },
                 "key_resources": {
                     "physical_resources": ["Location", "Equipment"],
-                    "human_resources": ["Skilled baristas", "Management team"],
+                    "human_resources": [
+                        f"Skilled {business_type} professionals",
+                        "Management team",
+                    ],
                 },
                 "value_propositions": {
-                    "primary_value": "High-quality coffee experience"
+                    "primary_value": f"High-quality {business_type} experience"
                 },
                 "customer_segments": {
                     "primary_segments": ["Young professionals", "Students"]
                 },
-                "revenue_streams": {"primary_streams": ["Coffee sales", "Food sales"]},
+                "revenue_streams": {
+                    "primary_streams": [f"{business_type} sales", "Additional services"]
+                },
             }
 
 

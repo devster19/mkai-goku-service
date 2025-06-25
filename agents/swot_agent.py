@@ -233,10 +233,10 @@ class SWOTAgent:
                 },
                 "strategic_implications": {
                     "strength_opportunity_strategies": [
-                        "Leverage community connections for marketing and partnerships",
-                        "Use local expertise to create unique Thai coffee experiences",
-                        "Expand quality-focused approach to new product lines",
-                        "Utilize flexible operations to adapt to market opportunities",
+                        f"Leverage {business_type} expertise for market expansion",
+                        f"Use {industry} knowledge to create unique customer experiences",
+                        f"Expand quality-focused approach to new {business_type} services",
+                        f"Utilize flexible operations to adapt to {industry} market opportunities",
                     ],
                     "weakness_opportunity_strategies": [
                         "Partner with technology providers to improve digital capabilities",
@@ -245,9 +245,9 @@ class SWOTAgent:
                         "Invest in staff training to improve operational efficiency",
                     ],
                     "strength_threat_strategies": [
-                        "Use community relationships to build customer loyalty against competition",
-                        "Leverage quality focus to differentiate from mass-market competitors",
-                        "Utilize local expertise to adapt to market changes",
+                        f"Use {business_type} expertise to build customer loyalty against competition",
+                        f"Leverage quality focus to differentiate from mass-market competitors",
+                        f"Utilize {industry} knowledge to adapt to market changes",
                         "Apply flexible operations to respond to external threats",
                     ],
                     "weakness_threat_strategies": [
@@ -261,18 +261,18 @@ class SWOTAgent:
                     "immediate_actions": [
                         "Conduct detailed competitor analysis",
                         "Develop comprehensive staff training program",
-                        "Implement digital ordering system",
+                        f"Implement digital {business_type} management system",
                         "Create emergency fund for financial stability",
                     ],
                     "short_term_goals": [
-                        "Improve digital presence and online ordering",
+                        "Improve digital presence and online services",
                         "Develop loyalty program to increase customer retention",
                         "Establish partnerships with local businesses",
                         "Implement cost control and inventory management systems",
                     ],
                     "long_term_strategies": [
-                        "Expand to multiple locations with standardized operations",
-                        "Develop franchise model for scalability",
+                        f"Expand {business_type} operations to multiple locations",
+                        f"Develop scalable {business_type} business model",
                         "Create strong brand identity and market presence",
                         "Build sustainable competitive advantages",
                     ],
@@ -305,10 +305,11 @@ class SWOTAgent:
             # Fallback to predefined SWOT analysis if OpenAI fails
             return {
                 "business_name": business_name,
+                "business_type": business_type,
                 "strengths": {
                     "internal_advantages": [
-                        "Quality focus",
-                        "Local expertise",
+                        f"Quality {business_type} focus",
+                        f"{industry} expertise",
                         "Community connections",
                     ]
                 },
@@ -321,8 +322,8 @@ class SWOTAgent:
                 },
                 "opportunities": {
                     "market_trends": [
-                        "Growing coffee culture",
-                        "Increasing demand",
+                        f"Growing {business_type} market demand",
+                        f"Increasing demand for quality {business_type} services",
                         "Digital transformation",
                     ]
                 },
@@ -337,7 +338,7 @@ class SWOTAgent:
                     "immediate_actions": [
                         "Competitor analysis",
                         "Staff training",
-                        "Digital implementation",
+                        f"Digital {business_type} implementation",
                     ]
                 },
             }
