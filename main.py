@@ -86,6 +86,39 @@ class BusinessAnalysisResponse(BaseModel):
     overall_recommendations: List[str]
 
 
+# Task and Goal models for automation
+class TaskCreate(BaseModel):
+    business_name: str
+    agent_type: str
+    task_type: str
+    frequency: str
+    parameters: Optional[Dict[str, Any]] = {}
+    status: Optional[str] = "pending"
+
+
+class TaskUpdate(BaseModel):
+    status: Optional[str] = None
+    results: Optional[Dict[str, Any]] = None
+    last_executed: Optional[str] = None
+    next_execution: Optional[str] = None
+    parameters: Optional[Dict[str, Any]] = None
+
+
+class GoalCreate(BaseModel):
+    goal_type: str
+    target_value: float
+    current_value: Optional[float] = 0
+    deadline: str
+    status: Optional[str] = "on_track"
+
+
+class GoalUpdate(BaseModel):
+    current_value: Optional[float] = None
+    status: Optional[str] = None
+    target_value: Optional[float] = None
+    deadline: Optional[str] = None
+
+
 # Agent configuration
 AGENT_CONFIG = {
     "strategic": {"url": "http://localhost:5001", "port": 5001},
@@ -498,23 +531,76 @@ async def get_business_tasks(business_id: str):
     tasks = automation_engine.get_business_tasks(business_id)
     return {
         "business_id": business_id,
-        "tasks": [
-            {
-                "task_type": task.task_type,
-                "agent_type": task.agent_type,
-                "frequency": task.frequency.value,
-                "status": task.status.value,
-                "last_executed": (
-                    task.last_executed.isoformat() if task.last_executed else None
-                ),
-                "next_execution": (
-                    task.next_execution.isoformat() if task.next_execution else None
-                ),
-                "results": task.results,
-            }
-            for task in tasks
-        ],
+        "tasks": tasks,
     }
+
+
+@app.post("/automation/business/{business_id}/tasks")
+async def create_business_task(business_id: str, task_data: TaskCreate):
+    """Create a new automated task for a business"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # Convert Pydantic model to dict and add business_id
+        task_dict = task_data.model_dump()
+        task_dict["business_id"] = business_id
+
+        # Save task to database
+        task_id = db.save_task(task_dict)
+
+        if task_id:
+            return {
+                "message": "Task created successfully",
+                "task_id": task_id,
+                "business_id": business_id,
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create task")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
+
+
+@app.put("/automation/tasks/{task_id}")
+async def update_task(task_id: str, update_data: TaskUpdate):
+    """Update an existing task"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # Convert Pydantic model to dict, excluding None values
+        update_dict = {
+            k: v for k, v in update_data.model_dump().items() if v is not None
+        }
+
+        success = db.update_task(task_id, update_dict)
+
+        if success:
+            return {"message": "Task updated successfully", "task_id": task_id}
+        else:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
+
+
+@app.delete("/automation/tasks/{task_id}")
+async def delete_task(task_id: str):
+    """Delete a task"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        success = db.delete_task(task_id)
+
+        if success:
+            return {"message": "Task deleted successfully", "task_id": task_id}
+        else:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete task: {str(e)}")
 
 
 @app.get("/automation/business/{business_id}/goals")
@@ -526,23 +612,76 @@ async def get_business_goals(business_id: str):
     goals = automation_engine.get_business_goals(business_id)
     return {
         "business_id": business_id,
-        "goals": [
-            {
-                "goal_type": goal.goal_type,
-                "target_value": goal.target_value,
-                "current_value": goal.current_value,
-                "progress_percentage": (
-                    (goal.current_value / goal.target_value) * 100
-                    if goal.target_value > 0
-                    else 0
-                ),
-                "deadline": goal.deadline.isoformat(),
-                "status": goal.status,
-                "last_updated": goal.last_updated.isoformat(),
-            }
-            for goal in goals
-        ],
+        "goals": goals,
     }
+
+
+@app.post("/automation/business/{business_id}/goals")
+async def create_business_goal(business_id: str, goal_data: GoalCreate):
+    """Create a new goal for a business"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # Convert Pydantic model to dict and add business_id
+        goal_dict = goal_data.model_dump()
+        goal_dict["business_id"] = business_id
+
+        # Save goal to database
+        goal_id = db.save_goal(goal_dict)
+
+        if goal_id:
+            return {
+                "message": "Goal created successfully",
+                "goal_id": goal_id,
+                "business_id": business_id,
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create goal")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create goal: {str(e)}")
+
+
+@app.put("/automation/goals/{goal_id}")
+async def update_goal(goal_id: str, update_data: GoalUpdate):
+    """Update an existing goal"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # Convert Pydantic model to dict, excluding None values
+        update_dict = {
+            k: v for k, v in update_data.model_dump().items() if v is not None
+        }
+
+        success = db.update_goal(goal_id, update_dict)
+
+        if success:
+            return {"message": "Goal updated successfully", "goal_id": goal_id}
+        else:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update goal: {str(e)}")
+
+
+@app.delete("/automation/goals/{goal_id}")
+async def delete_goal(goal_id: str):
+    """Delete a goal"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        success = db.delete_goal(goal_id)
+
+        if success:
+            return {"message": "Goal deleted successfully", "goal_id": goal_id}
+        else:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete goal: {str(e)}")
 
 
 @app.post("/automation/business/{business_id}/check-goals")
@@ -595,22 +734,69 @@ async def execute_specific_task(business_id: str, task_type: str, agent_type: st
     try:
         # Find the task
         tasks = automation_engine.get_business_tasks(business_id)
-        task = next(
+        task_data = next(
             (
                 t
                 for t in tasks
-                if t.task_type == task_type and t.agent_type == agent_type
+                if t["task_type"] == task_type and t["agent_type"] == agent_type
             ),
             None,
         )
 
-        if not task:
+        if not task_data:
             raise HTTPException(status_code=404, detail="Task not found")
+
+        # Create AutomatedTask object
+        from task_automation import AutomatedTask, TaskFrequency
+
+        task = AutomatedTask(
+            business_id=task_data["business_id"],
+            business_name=task_data["business_name"],
+            agent_type=task_data["agent_type"],
+            task_type=task_data["task_type"],
+            frequency=TaskFrequency(task_data["frequency"]),
+            parameters=task_data.get("parameters", {}),
+            task_id=task_data["_id"],
+        )
 
         await automation_engine.execute_task(task)
         return {"message": f"Task {task_type} executed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to execute task: {str(e)}")
+
+
+@app.get("/automation/tasks")
+async def get_all_tasks(status: Optional[str] = None):
+    """Get all tasks, optionally filtered by status"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        tasks = db.get_all_tasks(status)
+        return {"tasks": tasks, "total_count": len(tasks), "status_filter": status}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get tasks: {str(e)}")
+
+
+@app.get("/automation/goals")
+async def get_all_goals():
+    """Get all goals"""
+    if not AUTOMATION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Automation system not available")
+
+    try:
+        # This would need to be implemented in the database module
+        # For now, we'll get goals for all businesses
+        all_goals = []
+        businesses = db.get_all_businesses()
+
+        for business in businesses:
+            goals = automation_engine.get_business_goals(business["_id"])
+            all_goals.extend(goals)
+
+        return {"goals": all_goals, "total_count": len(all_goals)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get goals: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -27,6 +27,8 @@ class BusinessDatabase:
         self.db = None
         self.businesses_collection = None
         self.analyses_collection = None
+        self.tasks_collection = None
+        self.goals_collection = None
 
     def connect(self):
         """Connect to MongoDB"""
@@ -40,6 +42,8 @@ class BusinessDatabase:
             self.db = self.client.business_analysis
             self.businesses_collection = self.db.businesses
             self.analyses_collection = self.db.analyses
+            self.tasks_collection = self.db.tasks
+            self.goals_collection = self.db.goals
 
             # Create indexes for better performance
             self.businesses_collection.create_index("business_name")
@@ -47,6 +51,11 @@ class BusinessDatabase:
             self.businesses_collection.create_index("created_at")
             self.analyses_collection.create_index("business_id")
             self.analyses_collection.create_index("created_at")
+            self.tasks_collection.create_index("business_id")
+            self.tasks_collection.create_index("status")
+            self.tasks_collection.create_index("next_execution")
+            self.goals_collection.create_index("business_id")
+            self.goals_collection.create_index("status")
 
             return True
 
@@ -273,6 +282,252 @@ class BusinessDatabase:
 
         except Exception as e:
             logger.error(f"❌ Error deleting business: {e}")
+            return False
+
+    # Task Management Functions
+    def save_task(self, task_data: Dict[str, Any]) -> Optional[str]:
+        """Save a task to MongoDB"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return None
+
+            # Prepare task document
+            task_doc = {
+                "business_id": task_data.get("business_id"),
+                "business_name": task_data.get("business_name"),
+                "agent_type": task_data.get("agent_type"),
+                "task_type": task_data.get("task_type"),
+                "frequency": task_data.get("frequency"),
+                "status": task_data.get("status", "pending"),
+                "parameters": task_data.get("parameters", {}),
+                "results": task_data.get("results"),
+                "last_executed": task_data.get("last_executed"),
+                "next_execution": task_data.get("next_execution"),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            }
+
+            # Insert task document
+            result = self.tasks_collection.insert_one(task_doc)
+            task_id = str(result.inserted_id)
+
+            logger.info(
+                f"✅ Saved task '{task_data.get('task_type')}' for business: {task_data.get('business_name')}"
+            )
+            return task_id
+
+        except Exception as e:
+            logger.error(f"❌ Error saving task: {e}")
+            return None
+
+    def get_tasks_for_business(self, business_id: str) -> List[Dict[str, Any]]:
+        """Get all tasks for a specific business"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return []
+
+            tasks = list(self.tasks_collection.find({"business_id": business_id}))
+
+            # Convert ObjectId to string for JSON serialization
+            for task in tasks:
+                task["_id"] = str(task["_id"])
+                # Convert datetime objects to ISO strings
+                if task.get("last_executed"):
+                    task["last_executed"] = task["last_executed"].isoformat()
+                if task.get("next_execution"):
+                    task["next_execution"] = task["next_execution"].isoformat()
+                if task.get("created_at"):
+                    task["created_at"] = task["created_at"].isoformat()
+                if task.get("updated_at"):
+                    task["updated_at"] = task["updated_at"].isoformat()
+
+            return tasks
+
+        except Exception as e:
+            logger.error(f"❌ Error retrieving tasks: {e}")
+            return []
+
+    def update_task(self, task_id: str, update_fields: Dict[str, Any]) -> bool:
+        """Update a task in MongoDB"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return False
+
+            from bson import ObjectId
+
+            # Add updated_at timestamp
+            update_fields["updated_at"] = datetime.utcnow()
+
+            result = self.tasks_collection.update_one(
+                {"_id": ObjectId(task_id)}, {"$set": update_fields}
+            )
+
+            success = result.modified_count > 0
+            if success:
+                logger.info(f"✅ Updated task: {task_id}")
+            return success
+
+        except Exception as e:
+            logger.error(f"❌ Error updating task: {e}")
+            return False
+
+    def delete_task(self, task_id: str) -> bool:
+        """Delete a task from MongoDB"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return False
+
+            from bson import ObjectId
+
+            result = self.tasks_collection.delete_one({"_id": ObjectId(task_id)})
+
+            success = result.deleted_count > 0
+            if success:
+                logger.info(f"✅ Deleted task: {task_id}")
+            return success
+
+        except Exception as e:
+            logger.error(f"❌ Error deleting task: {e}")
+            return False
+
+    def get_all_tasks(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get all tasks, optionally filtered by status"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return []
+
+            query = {}
+            if status:
+                query["status"] = status
+
+            tasks = list(self.tasks_collection.find(query))
+
+            # Convert ObjectId to string for JSON serialization
+            for task in tasks:
+                task["_id"] = str(task["_id"])
+                # Convert datetime objects to ISO strings
+                if task.get("last_executed"):
+                    task["last_executed"] = task["last_executed"].isoformat()
+                if task.get("next_execution"):
+                    task["next_execution"] = task["next_execution"].isoformat()
+                if task.get("created_at"):
+                    task["created_at"] = task["created_at"].isoformat()
+                if task.get("updated_at"):
+                    task["updated_at"] = task["updated_at"].isoformat()
+
+            return tasks
+
+        except Exception as e:
+            logger.error(f"❌ Error retrieving all tasks: {e}")
+            return []
+
+    # Goal Management Functions
+    def save_goal(self, goal_data: Dict[str, Any]) -> Optional[str]:
+        """Save a business goal to MongoDB"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return None
+
+            # Prepare goal document
+            goal_doc = {
+                "business_id": goal_data.get("business_id"),
+                "goal_type": goal_data.get("goal_type"),
+                "target_value": goal_data.get("target_value"),
+                "current_value": goal_data.get("current_value"),
+                "deadline": goal_data.get("deadline"),
+                "status": goal_data.get("status", "on_track"),
+                "last_updated": datetime.utcnow(),
+                "created_at": datetime.utcnow(),
+            }
+
+            # Insert goal document
+            result = self.goals_collection.insert_one(goal_doc)
+            goal_id = str(result.inserted_id)
+
+            logger.info(
+                f"✅ Saved goal '{goal_data.get('goal_type')}' for business: {goal_data.get('business_id')}"
+            )
+            return goal_id
+
+        except Exception as e:
+            logger.error(f"❌ Error saving goal: {e}")
+            return None
+
+    def get_goals_for_business(self, business_id: str) -> List[Dict[str, Any]]:
+        """Get all goals for a specific business"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return []
+
+            goals = list(self.goals_collection.find({"business_id": business_id}))
+
+            # Convert ObjectId to string for JSON serialization
+            for goal in goals:
+                goal["_id"] = str(goal["_id"])
+                # Convert datetime objects to ISO strings
+                if goal.get("deadline"):
+                    goal["deadline"] = goal["deadline"].isoformat()
+                if goal.get("last_updated"):
+                    goal["last_updated"] = goal["last_updated"].isoformat()
+                if goal.get("created_at"):
+                    goal["created_at"] = goal["created_at"].isoformat()
+
+            return goals
+
+        except Exception as e:
+            logger.error(f"❌ Error retrieving goals: {e}")
+            return []
+
+    def update_goal(self, goal_id: str, update_fields: Dict[str, Any]) -> bool:
+        """Update a goal in MongoDB"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return False
+
+            from bson import ObjectId
+
+            # Add last_updated timestamp
+            update_fields["last_updated"] = datetime.utcnow()
+
+            result = self.goals_collection.update_one(
+                {"_id": ObjectId(goal_id)}, {"$set": update_fields}
+            )
+
+            success = result.modified_count > 0
+            if success:
+                logger.info(f"✅ Updated goal: {goal_id}")
+            return success
+
+        except Exception as e:
+            logger.error(f"❌ Error updating goal: {e}")
+            return False
+
+    def delete_goal(self, goal_id: str) -> bool:
+        """Delete a goal from MongoDB"""
+        try:
+            if not self.client:
+                if not self.connect():
+                    return False
+
+            from bson import ObjectId
+
+            result = self.goals_collection.delete_one({"_id": ObjectId(goal_id)})
+
+            success = result.deleted_count > 0
+            if success:
+                logger.info(f"✅ Deleted goal: {goal_id}")
+            return success
+
+        except Exception as e:
+            logger.error(f"❌ Error deleting goal: {e}")
             return False
 
 

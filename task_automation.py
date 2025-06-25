@@ -11,6 +11,9 @@ from dataclasses import dataclass
 from enum import Enum
 import logging
 
+# Import database module for persistent storage
+from database import BusinessDatabase
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,6 +45,7 @@ class AutomatedTask:
     status: TaskStatus = TaskStatus.PENDING
     parameters: Dict[str, Any] = None
     results: Dict[str, Any] = None
+    task_id: Optional[str] = None  # Database ID for the task
 
 
 @dataclass
@@ -53,14 +57,14 @@ class BusinessGoal:
     deadline: datetime
     status: str  # "on_track", "at_risk", "behind", "achieved"
     last_updated: datetime
+    goal_id: Optional[str] = None  # Database ID for the goal
 
 
 class TaskAutomationEngine:
     """Automated task management and business monitoring system"""
 
     def __init__(self):
-        self.tasks: List[AutomatedTask] = []
-        self.business_goals: Dict[str, List[BusinessGoal]] = {}
+        self.db = BusinessDatabase()
         self.mcp_client = httpx.AsyncClient(timeout=30.0)
         self.running = False
 
@@ -142,24 +146,27 @@ class TaskAutomationEngine:
                     task_config["frequency"], business_type
                 )
 
-                task = AutomatedTask(
-                    business_id=business_id,
-                    business_name=business_name,
-                    agent_type=agent_type,
-                    task_type=task_type,
-                    frequency=frequency,
-                    next_execution=self._calculate_next_execution(frequency),
-                    parameters=task_config["parameters"],
-                )
+                # Create task data for database
+                task_data = {
+                    "business_id": business_id,
+                    "business_name": business_name,
+                    "agent_type": agent_type,
+                    "task_type": task_type,
+                    "frequency": frequency.value,
+                    "next_execution": self._calculate_next_execution(frequency),
+                    "parameters": task_config["parameters"],
+                    "status": TaskStatus.PENDING.value,
+                }
 
-                self.tasks.append(task)
+                # Save task to database
+                task_id = self.db.save_task(task_data)
+                if task_id:
+                    logger.info(f"✅ Created task {task_type} for {business_name}")
 
         # Create initial business goals
         self._create_initial_goals(business_id, business_type)
 
-        logger.info(
-            f"Created {len(self.agent_tasks) * len(self.agent_tasks['strategic'])} tasks for {business_name}"
-        )
+        logger.info(f"Created automation tasks for {business_name}")
 
     def _adjust_frequency_for_business_type(
         self, base_frequency: TaskFrequency, business_type: str
@@ -202,36 +209,28 @@ class TaskAutomationEngine:
             return now + timedelta(weeks=1)
         elif frequency == TaskFrequency.MONTHLY:
             return now + timedelta(days=30)
-
-        return now + timedelta(days=1)
+        else:
+            return now + timedelta(days=1)
 
     def _create_initial_goals(self, business_id: str, business_type: str):
         """Create initial business goals based on business type"""
         goals = []
-        now = datetime.now()
 
-        # Common goals for all businesses
+        # Common goals for all business types
         common_goals = [
             {
                 "goal_type": "revenue_growth",
                 "target_value": 1000000,  # 1M THB
                 "current_value": 0,
-                "deadline": now + timedelta(days=365),
-                "description": "Achieve 1M THB annual revenue",
+                "deadline": datetime.now() + timedelta(days=365),
+                "status": "on_track",
             },
             {
                 "goal_type": "customer_acquisition",
-                "target_value": 100,
+                "target_value": 1000,
                 "current_value": 0,
-                "deadline": now + timedelta(days=180),
-                "description": "Acquire 100 customers",
-            },
-            {
-                "goal_type": "profit_margin",
-                "target_value": 20.0,  # 20%
-                "current_value": 0,
-                "deadline": now + timedelta(days=365),
-                "description": "Achieve 20% profit margin",
+                "deadline": datetime.now() + timedelta(days=180),
+                "status": "on_track",
             },
         ]
 
@@ -239,99 +238,129 @@ class TaskAutomationEngine:
         business_specific_goals = {
             "tech_startup": [
                 {
-                    "goal_type": "user_growth",
-                    "target_value": 1000,
+                    "goal_type": "user_engagement",
+                    "target_value": 80,  # 80% engagement rate
                     "current_value": 0,
-                    "deadline": now + timedelta(days=90),
-                    "description": "Reach 1000 active users",
-                }
+                    "deadline": datetime.now() + timedelta(days=90),
+                    "status": "on_track",
+                },
             ],
             "restaurant": [
                 {
                     "goal_type": "daily_customers",
-                    "target_value": 50,
+                    "target_value": 200,
                     "current_value": 0,
-                    "deadline": now + timedelta(days=60),
-                    "description": "Serve 50 customers daily",
-                }
+                    "deadline": datetime.now() + timedelta(days=60),
+                    "status": "on_track",
+                },
             ],
             "retail_store": [
                 {
                     "goal_type": "inventory_turnover",
-                    "target_value": 12.0,  # 12 times per year
+                    "target_value": 12,  # 12 times per year
                     "current_value": 0,
-                    "deadline": now + timedelta(days=365),
-                    "description": "Achieve 12x inventory turnover",
-                }
+                    "deadline": datetime.now() + timedelta(days=90),
+                    "status": "on_track",
+                },
             ],
         }
 
+        # Combine common and business-specific goals
         all_goals = common_goals + business_specific_goals.get(business_type, [])
 
+        # Save goals to database
         for goal_data in all_goals:
-            goal = BusinessGoal(
-                business_id=business_id,
-                goal_type=goal_data["goal_type"],
-                target_value=goal_data["target_value"],
-                current_value=goal_data["current_value"],
-                deadline=goal_data["deadline"],
-                status="on_track",
-                last_updated=now,
-            )
-            goals.append(goal)
-
-        self.business_goals[business_id] = goals
+            goal_data["business_id"] = business_id
+            goal_id = self.db.save_goal(goal_data)
+            if goal_id:
+                logger.info(
+                    f"✅ Created goal {goal_data['goal_type']} for business {business_id}"
+                )
 
     async def execute_task(self, task: AutomatedTask):
         """Execute a specific automated task"""
-        logger.info(f"Executing task: {task.task_type} for {task.business_name}")
-
-        task.status = TaskStatus.IN_PROGRESS
-        task.last_executed = datetime.now()
-
         try:
-            # Send task to appropriate agent
-            agent_url = f"http://localhost:{self._get_agent_port(task.agent_type)}"
+            # Update task status to in_progress
+            if task.task_id:
+                self.db.update_task(
+                    task.task_id, {"status": TaskStatus.IN_PROGRESS.value}
+                )
 
-            message = {
-                "agent_type": task.agent_type,
+            logger.info(
+                f"🤖 {task.agent_type.title()} Agent - Automated Task Received:"
+            )
+            logger.info(f"   Task Type: {task.task_type}")
+            logger.info(f"   Business: {task.business_name}")
+            logger.info(f"   Business ID: {task.business_id}")
+            logger.info(f"   Parameters: {task.parameters}")
+
+            # Get agent port
+            agent_port = self._get_agent_port(task.agent_type)
+            agent_url = f"http://localhost:{agent_port}"
+
+            # Execute task via agent
+            task_request = {
                 "task_type": task.task_type,
                 "business_id": task.business_id,
                 "business_name": task.business_name,
                 "parameters": task.parameters or {},
-                "timestamp": datetime.now().isoformat(),
-                "request_id": f"auto_task_{datetime.now().timestamp()}",
             }
 
-            response = await self.mcp_client.post(
-                f"{agent_url}/execute_automated_task",
-                json=message,
-                headers={"Content-Type": "application/json"},
-            )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{agent_url}/execute_automated_task",
+                    json=task_request,
+                )
 
-            if response.status_code == 200:
-                result = response.json()
-                task.results = result
-                task.status = TaskStatus.COMPLETED
+                if response.status_code == 200:
+                    result = response.json()
 
-                # Update business goals based on task results
-                await self._update_goals_from_task(task, result)
+                    # Update task with results
+                    update_data = {
+                        "status": TaskStatus.COMPLETED.value,
+                        "results": result,
+                        "last_executed": datetime.now(),
+                        "next_execution": self._calculate_next_execution(
+                            task.frequency
+                        ),
+                    }
 
-                logger.info(f"Task completed successfully: {task.task_type}")
-            else:
-                task.status = TaskStatus.FAILED
-                logger.error(f"Task failed: {task.task_type} - {response.text}")
+                    if task.task_id:
+                        self.db.update_task(task.task_id, update_data)
+
+                    # Update goals based on task results
+                    await self._update_goals_from_task(task, result)
+
+                    logger.info(
+                        f"✅ {task.agent_type.title()} Agent - Task Completed: {task.task_type}"
+                    )
+                else:
+                    # Update task status to failed
+                    if task.task_id:
+                        self.db.update_task(
+                            task.task_id,
+                            {
+                                "status": TaskStatus.FAILED.value,
+                                "last_executed": datetime.now(),
+                            },
+                        )
+                    logger.error(f"❌ Task execution failed: {response.status_code}")
 
         except Exception as e:
-            task.status = TaskStatus.FAILED
-            logger.error(f"Error executing task {task.task_type}: {str(e)}")
-
-        # Schedule next execution
-        task.next_execution = self._calculate_next_execution(task.frequency)
+            logger.error(f"❌ Error executing task: {e}")
+            # Update task status to failed
+            if task.task_id:
+                self.db.update_task(
+                    task.task_id,
+                    {
+                        "status": TaskStatus.FAILED.value,
+                        "last_executed": datetime.now(),
+                    },
+                )
 
     def _get_agent_port(self, agent_type: str) -> int:
-        """Get agent port number"""
-        ports = {
+        """Get the port number for a specific agent type"""
+        agent_ports = {
             "strategic": 5001,
             "creative": 5002,
             "financial": 5003,
@@ -341,222 +370,262 @@ class TaskAutomationEngine:
             "swot": 5007,
             "business_model": 5008,
         }
-        return ports.get(agent_type, 5001)
+        return agent_ports.get(agent_type, 5001)
 
     async def _update_goals_from_task(
         self, task: AutomatedTask, result: Dict[str, Any]
     ):
         """Update business goals based on task results"""
-        if task.business_id not in self.business_goals:
-            return
+        try:
+            # Get current goals for the business
+            goals_data = self.db.get_goals_for_business(task.business_id)
 
-        goals = self.business_goals[task.business_id]
+            if not goals_data:
+                return
 
-        # Update goals based on task type and results
-        if task.task_type == "kpi_monitoring":
-            await self._update_kpi_goals(goals, result)
-        elif task.task_type == "financial_review":
-            await self._update_financial_goals(goals, result)
-        elif task.task_type == "sales_performance":
-            await self._update_sales_goals(goals, result)
+            # Update goals based on task type and results
+            if task.task_type == "financial_review":
+                await self._update_financial_goals(goals_data, result)
+            elif task.task_type == "sales_performance":
+                await self._update_sales_goals(goals_data, result)
+            elif task.task_type == "kpi_monitoring":
+                await self._update_kpi_goals(goals_data, result)
+
+        except Exception as e:
+            logger.error(f"❌ Error updating goals from task: {e}")
 
     async def _update_kpi_goals(
-        self, goals: List[BusinessGoal], result: Dict[str, Any]
+        self, goals: List[Dict[str, Any]], result: Dict[str, Any]
     ):
-        """Update goals based on KPI monitoring results"""
-        kpis = result.get("kpis", {})
-
+        """Update KPI-related goals"""
         for goal in goals:
-            if goal.goal_type in kpis:
-                goal.current_value = kpis[goal.goal_type]
-                goal.last_updated = datetime.now()
-
-                # Update goal status
-                progress_percentage = (goal.current_value / goal.target_value) * 100
-                time_remaining = (goal.deadline - datetime.now()).days
-
-                if progress_percentage >= 100:
-                    goal.status = "achieved"
-                elif time_remaining < 30 and progress_percentage < 80:
-                    goal.status = "behind"
-                elif time_remaining < 60 and progress_percentage < 60:
-                    goal.status = "at_risk"
-                else:
-                    goal.status = "on_track"
+            if goal["goal_type"] == "user_engagement":
+                # Update based on engagement metrics
+                if "engagement_rate" in result:
+                    self.db.update_goal(
+                        goal["_id"], {"current_value": result["engagement_rate"]}
+                    )
 
     async def _update_financial_goals(
-        self, goals: List[BusinessGoal], result: Dict[str, Any]
+        self, goals: List[Dict[str, Any]], result: Dict[str, Any]
     ):
-        """Update goals based on financial review results"""
-        financial_data = result.get("financial_data", {})
-
+        """Update financial goals"""
         for goal in goals:
-            if goal.goal_type == "revenue_growth" and "revenue" in financial_data:
-                goal.current_value = financial_data["revenue"]
-                goal.last_updated = datetime.now()
-            elif (
-                goal.goal_type == "profit_margin" and "profit_margin" in financial_data
-            ):
-                goal.current_value = financial_data["profit_margin"]
-                goal.last_updated = datetime.now()
+            if goal["goal_type"] == "revenue_growth":
+                # Update based on financial metrics
+                if "current_revenue" in result:
+                    self.db.update_goal(
+                        goal["_id"], {"current_value": result["current_revenue"]}
+                    )
 
     async def _update_sales_goals(
-        self, goals: List[BusinessGoal], result: Dict[str, Any]
+        self, goals: List[Dict[str, Any]], result: Dict[str, Any]
     ):
-        """Update goals based on sales performance results"""
-        sales_data = result.get("sales_data", {})
-
+        """Update sales goals"""
         for goal in goals:
-            if goal.goal_type == "customer_acquisition" and "customers" in sales_data:
-                goal.current_value = sales_data["customers"]
-                goal.last_updated = datetime.now()
+            if goal["goal_type"] == "customer_acquisition":
+                # Update based on sales metrics
+                if "total_customers" in result:
+                    self.db.update_goal(
+                        goal["_id"], {"current_value": result["total_customers"]}
+                    )
 
     async def check_goal_achievement(self, business_id: str) -> Dict[str, Any]:
         """Check if business goals are being achieved and trigger re-analysis if needed"""
-        if business_id not in self.business_goals:
-            return {"needs_reanalysis": False, "reasons": []}
-
-        goals = self.business_goals[business_id]
-        reasons = []
-
-        # Check for goals that are behind or at risk
-        for goal in goals:
-            if goal.status in ["behind", "at_risk"]:
-                reasons.append(f"Goal '{goal.goal_type}' is {goal.status}")
-
-        # Check for goals that are significantly behind schedule
-        for goal in goals:
-            if goal.deadline < datetime.now() and goal.status != "achieved":
-                reasons.append(f"Goal '{goal.goal_type}' is past deadline")
-
-        needs_reanalysis = len(reasons) > 0
-
-        if needs_reanalysis:
-            logger.warning(f"Business {business_id} needs re-analysis: {reasons}")
-            await self._trigger_reanalysis(business_id, reasons)
-
-        return {
-            "needs_reanalysis": needs_reanalysis,
-            "reasons": reasons,
-            "goals_status": {goal.goal_type: goal.status for goal in goals},
-        }
-
-    async def _trigger_reanalysis(self, business_id: str, reasons: List[str]):
-        """Trigger a new business analysis due to goal underperformance"""
-        logger.info(f"Triggering re-analysis for business {business_id}")
-
         try:
-            # Get current business data
-            business_data = await self._get_business_data(business_id)
-            if not business_data:
-                logger.error(f"Could not retrieve business data for {business_id}")
-                return
+            goals_data = self.db.get_goals_for_business(business_id)
 
-            # Add re-analysis context
-            business_data["reanalysis_context"] = {
-                "triggered_by": "goal_underperformance",
-                "reasons": reasons,
-                "original_analysis_date": business_data.get("created_at"),
-                "reanalysis_date": datetime.now().isoformat(),
+            if not goals_data:
+                return {"message": "No goals found for this business"}
+
+            at_risk_goals = []
+            behind_goals = []
+            achieved_goals = []
+
+            for goal in goals_data:
+                progress = (
+                    (goal["current_value"] / goal["target_value"]) * 100
+                    if goal["target_value"] > 0
+                    else 0
+                )
+                days_remaining = (
+                    datetime.fromisoformat(goal["deadline"]) - datetime.now()
+                ).days
+
+                # Update goal status based on progress and time remaining
+                if progress >= 100:
+                    status = "achieved"
+                    achieved_goals.append(goal["goal_type"])
+                elif days_remaining < 30 and progress < 70:
+                    status = "at_risk"
+                    at_risk_goals.append(goal["goal_type"])
+                elif days_remaining < 60 and progress < 50:
+                    status = "behind"
+                    behind_goals.append(goal["goal_type"])
+                else:
+                    status = "on_track"
+
+                # Update goal status in database
+                self.db.update_goal(goal["_id"], {"status": status})
+
+            # Trigger re-analysis if goals are at risk
+            if at_risk_goals or behind_goals:
+                await self._trigger_reanalysis(
+                    business_id, at_risk_goals + behind_goals
+                )
+
+            return {
+                "business_id": business_id,
+                "goals_status": {
+                    "achieved": achieved_goals,
+                    "at_risk": at_risk_goals,
+                    "behind": behind_goals,
+                    "on_track": [
+                        g["goal_type"] for g in goals_data if g["status"] == "on_track"
+                    ],
+                },
+                "total_goals": len(goals_data),
+                "achievement_rate": (
+                    len(achieved_goals) / len(goals_data) * 100 if goals_data else 0
+                ),
             }
 
-            # Send to main processing endpoint
-            response = await self.mcp_client.post(
-                "http://localhost:5099/process-business",
-                json=business_data,
-                headers={"Content-Type": "application/json"},
+        except Exception as e:
+            logger.error(f"❌ Error checking goal achievement: {e}")
+            return {"error": str(e)}
+
+    async def _trigger_reanalysis(self, business_id: str, reasons: List[str]):
+        """Trigger re-analysis of business due to goal issues"""
+        try:
+            logger.warning(
+                f"⚠️ Triggering re-analysis for business {business_id} due to: {reasons}"
             )
 
-            if response.status_code == 200:
-                logger.info(
-                    f"Re-analysis triggered successfully for business {business_id}"
-                )
-            else:
-                logger.error(f"Failed to trigger re-analysis: {response.text}")
+            # Get business data
+            business_data = await self._get_business_data(business_id)
+            if not business_data:
+                return
+
+            # Create re-analysis task
+            reanalysis_task = {
+                "business_id": business_id,
+                "business_name": business_data.get("business_name", "Unknown"),
+                "agent_type": "manager",
+                "task_type": "goal_review",
+                "frequency": TaskFrequency.MONTHLY.value,
+                "parameters": {"review_type": "goal_crisis", "reasons": reasons},
+                "status": TaskStatus.PENDING.value,
+                "next_execution": datetime.now(),
+            }
+
+            # Save re-analysis task
+            task_id = self.db.save_task(reanalysis_task)
+            if task_id:
+                logger.info(f"✅ Created re-analysis task for business {business_id}")
 
         except Exception as e:
-            logger.error(f"Error triggering re-analysis: {str(e)}")
+            logger.error(f"❌ Error triggering re-analysis: {e}")
 
     async def _get_business_data(self, business_id: str) -> Optional[Dict[str, Any]]:
         """Get business data from database"""
         try:
-            response = await self.mcp_client.get(
-                f"http://localhost:5099/get-analysis/{business_id}"
-            )
-            if response.status_code == 200:
-                return response.json()
+            return self.db.get_business(business_id)
         except Exception as e:
-            logger.error(f"Error getting business data: {str(e)}")
-        return None
+            logger.error(f"❌ Error getting business data: {e}")
+            return None
 
     async def run_scheduler(self):
-        """Main scheduler loop"""
+        """Run the task scheduler"""
         self.running = True
-        logger.info("Starting task automation scheduler")
+        logger.info("🚀 Starting automation scheduler...")
 
         while self.running:
             try:
+                # Get all pending tasks that are due for execution
                 now = datetime.now()
+                all_tasks = self.db.get_all_tasks()
 
-                # Check for tasks that need to be executed
-                for task in self.tasks:
-                    if (
-                        task.next_execution
-                        and task.next_execution <= now
-                        and task.status != TaskStatus.IN_PROGRESS
-                    ):
-                        await self.execute_task(task)
+                for task_data in all_tasks:
+                    if task_data["status"] == TaskStatus.PENDING.value:
+                        next_execution = datetime.fromisoformat(
+                            task_data["next_execution"]
+                        )
+                        if next_execution <= now:
+                            # Create AutomatedTask object
+                            task = AutomatedTask(
+                                business_id=task_data["business_id"],
+                                business_name=task_data["business_name"],
+                                agent_type=task_data["agent_type"],
+                                task_type=task_data["task_type"],
+                                frequency=TaskFrequency(task_data["frequency"]),
+                                parameters=task_data.get("parameters", {}),
+                                task_id=task_data["_id"],
+                            )
 
-                # Check goal achievement for all businesses
-                business_ids = list(self.business_goals.keys())
-                for business_id in business_ids:
-                    await self.check_goal_achievement(business_id)
+                            # Execute task
+                            await self.execute_task(task)
 
-                # Wait before next check
-                await asyncio.sleep(60)  # Check every minute
+                # Sleep for 1 minute before next check
+                await asyncio.sleep(60)
 
             except Exception as e:
-                logger.error(f"Error in scheduler loop: {str(e)}")
+                logger.error(f"❌ Scheduler error: {e}")
                 await asyncio.sleep(60)
 
     def stop_scheduler(self):
-        """Stop the scheduler"""
+        """Stop the task scheduler"""
         self.running = False
-        logger.info("Stopping task automation scheduler")
+        logger.info("🛑 Stopping automation scheduler...")
 
-    def get_business_tasks(self, business_id: str) -> List[AutomatedTask]:
+    def get_business_tasks(self, business_id: str) -> List[Dict[str, Any]]:
         """Get all tasks for a specific business"""
-        return [task for task in self.tasks if task.business_id == business_id]
+        return self.db.get_tasks_for_business(business_id)
 
-    def get_business_goals(self, business_id: str) -> List[BusinessGoal]:
+    def get_business_goals(self, business_id: str) -> List[Dict[str, Any]]:
         """Get all goals for a specific business"""
-        return self.business_goals.get(business_id, [])
+        return self.db.get_goals_for_business(business_id)
 
     def get_automation_summary(self) -> Dict[str, Any]:
-        """Get summary of automation system"""
-        return {
-            "total_tasks": len(self.tasks),
-            "total_businesses": len(self.business_goals),
-            "tasks_by_status": {
-                status.value: len([t for t in self.tasks if t.status == status])
-                for status in TaskStatus
-            },
-            "recent_activity": [
-                {
-                    "business_name": task.business_name,
-                    "task_type": task.task_type,
-                    "status": task.status.value,
-                    "last_executed": (
-                        task.last_executed.isoformat() if task.last_executed else None
-                    ),
-                }
-                for task in sorted(
-                    self.tasks,
-                    key=lambda x: x.last_executed or datetime.min,
-                    reverse=True,
-                )[:10]
-            ],
-        }
+        """Get automation system summary"""
+        try:
+            all_tasks = self.db.get_all_tasks()
+
+            # Calculate statistics
+            total_tasks = len(all_tasks)
+            pending_tasks = len(
+                [t for t in all_tasks if t["status"] == TaskStatus.PENDING.value]
+            )
+            completed_tasks = len(
+                [t for t in all_tasks if t["status"] == TaskStatus.COMPLETED.value]
+            )
+            failed_tasks = len(
+                [t for t in all_tasks if t["status"] == TaskStatus.FAILED.value]
+            )
+
+            # Group by business
+            business_tasks = {}
+            for task in all_tasks:
+                business_id = task["business_id"]
+                if business_id not in business_tasks:
+                    business_tasks[business_id] = []
+                business_tasks[business_id].append(task)
+
+            return {
+                "total_tasks": total_tasks,
+                "pending_tasks": pending_tasks,
+                "completed_tasks": completed_tasks,
+                "failed_tasks": failed_tasks,
+                "success_rate": (
+                    (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+                ),
+                "businesses_with_tasks": len(business_tasks),
+                "scheduler_status": "running" if self.running else "stopped",
+                "last_updated": datetime.now().isoformat(),
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Error getting automation summary: {e}")
+            return {"error": str(e)}
 
 
 # Global automation engine instance
