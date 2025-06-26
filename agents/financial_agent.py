@@ -429,22 +429,41 @@ class FinancialAgent:
             # Fallback to predefined financial analysis if OpenAI fails
             return {
                 "business_name": business_name,
+                "business_type": business_type,
                 "financial_projections": {
                     "revenue_forecast": {
-                        "year_1": "2,500,000 THB",
-                        "year_2": "3,750,000 THB",
+                        "year_1": (
+                            f"{initial_investment * 0.5:,.0f} THB"
+                            if initial_investment
+                            else "To be determined"
+                        ),
+                        "year_2": (
+                            f"{initial_investment * 0.75:,.0f} THB"
+                            if initial_investment
+                            else "To be determined"
+                        ),
                     }
                 },
                 "funding_requirements": {
-                    "initial_investment": {"total": "2,000,000 THB"}
+                    "initial_investment": {
+                        "total": (
+                            f"{initial_investment:,.0f} THB"
+                            if initial_investment
+                            else "To be determined"
+                        )
+                    }
                 },
                 "pricing_strategy": {
-                    "coffee_prices": {"latte": "55-65 THB", "americano": "45-55 THB"}
+                    f"{business_type}_pricing": {
+                        f"basic_{business_type}_service": "Market-based pricing",
+                        f"premium_{business_type}_service": "Value-based pricing",
+                        f"{business_type}_consulting": "Hourly rate",
+                    }
                 },
                 "recommendations": [
                     "Maintain cash reserves",
                     "Monitor costs closely",
-                    "Focus on high-margin products",
+                    f"Focus on high-margin {business_type} products/services",
                     "Build supplier relationships",
                 ],
             }
