@@ -71,6 +71,66 @@ class BusinessInput(BaseModel):
     regulatory_requirements: Optional[List[str]] = None
 
 
+# External Agent models
+class ExternalAgentRegister(BaseModel):
+    agent_name: str
+    agent_type: str  # e.g., "custom_analytics", "specialized_financial", "market_research"
+    description: str
+    capabilities: List[str]  # List of capabilities this agent provides
+    endpoint_url: str  # The URL where this agent can be reached
+    callback_url: Optional[str] = None  # URL for receiving results from this agent
+    api_key: Optional[str] = None  # Optional API key for authentication
+    status: Optional[str] = "active"  # active, inactive, maintenance
+    version: Optional[str] = "1.0.0"
+    contact_info: Optional[Dict[str, str]] = None  # email, phone, etc.
+    configuration: Optional[Dict[str, Any]] = None  # Any additional configuration
+    mcp_support: Optional[bool] = False  # Whether this agent supports MCP protocol
+
+
+class ExternalAgentUpdate(BaseModel):
+    agent_name: Optional[str] = None
+    description: Optional[str] = None
+    capabilities: Optional[List[str]] = None
+    endpoint_url: Optional[str] = None
+    callback_url: Optional[str] = None
+    api_key: Optional[str] = None
+    status: Optional[str] = None
+    version: Optional[str] = None
+    contact_info: Optional[Dict[str, str]] = None
+    configuration: Optional[Dict[str, Any]] = None
+    mcp_support: Optional[bool] = None
+
+
+# MCP Task Management Models
+class MCPTaskRequest(BaseModel):
+    description: str
+    task_type: str  # e.g., "content_generation", "analysis", "prediction"
+    parameters: Dict[str, Any]
+    context: Optional[Dict[str, Any]] = None
+    callback_url: Optional[str] = None
+    priority: Optional[str] = "normal"  # low, normal, high, urgent
+    timeout_seconds: Optional[int] = 300  # 5 minutes default
+
+
+class MCPTaskResponse(BaseModel):
+    task_id: str
+    status: str  # pending, in_progress, completed, failed
+    agent_id: Optional[str] = None
+    agent_name: Optional[str] = None
+    created_at: str
+    estimated_completion: Optional[str] = None
+
+
+class MCPResult(BaseModel):
+    task_id: str
+    agent_id: str
+    status: str  # success, failed, partial
+    result: Dict[str, Any]
+    error_message: Optional[str] = None
+    execution_time: Optional[float] = None
+    timestamp: str
+
+
 # Response model
 class BusinessAnalysisResponse(BaseModel):
     business_name: str
