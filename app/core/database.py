@@ -133,6 +133,9 @@ class DatabaseManager:
     def _convert_object_id(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         """Convert ObjectId to string and datetime to ISO format"""
         if doc and "_id" in doc:
+            # Map _id to business_id for business documents
+            if "business_name" in doc:
+                doc["business_id"] = str(doc["_id"])
             doc["_id"] = str(doc["_id"])
 
         # Convert datetime objects to ISO strings

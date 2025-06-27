@@ -1,12 +1,14 @@
 """
 Business-related Pydantic schemas
 """
+
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
 
 class BusinessInput(BaseModel):
     """Business input model for analysis requests"""
+
     business_name: str
     business_type: str  # e.g., "coffee_shop", "restaurant", "retail_store", "tech_startup", "consulting_firm"
     location: str
@@ -17,15 +19,34 @@ class BusinessInput(BaseModel):
     initial_investment: Optional[float] = None  # In local currency
     team_size: Optional[int] = None
     unique_value_proposition: Optional[str] = None
-    business_model: Optional[str] = None  # e.g., "b2c", "b2b", "marketplace", "subscription"
-    industry: Optional[str] = None  # e.g., "food_beverage", "technology", "retail", "services"
-    market_size: Optional[str] = None  # e.g., "local", "regional", "national", "international"
+    business_model: Optional[str] = (
+        None  # e.g., "b2c", "b2b", "marketplace", "subscription"
+    )
+    industry: Optional[str] = (
+        None  # e.g., "food_beverage", "technology", "retail", "services"
+    )
+    market_size: Optional[str] = (
+        None  # e.g., "local", "regional", "national", "international"
+    )
     technology_requirements: Optional[List[str]] = None
     regulatory_requirements: Optional[List[str]] = None
 
 
+class MinimalBusinessInput(BaseModel):
+    """Minimal business input model for simple creation"""
+
+    business_name: str
+    description: str
+    business_type: Optional[str] = "retail_store"
+    location: Optional[str] = "Bangkok"
+    target_market: Optional[str] = "general"
+    competitors: Optional[List[str]] = []
+    growth_goals: Optional[List[str]] = []
+
+
 class BusinessAnalysisResponse(BaseModel):
     """Business analysis response model"""
+
     business_name: str
     timestamp: str
     business_id: Optional[str] = None
@@ -41,6 +62,7 @@ class BusinessAnalysisResponse(BaseModel):
 
 class BusinessResponse(BaseModel):
     """Business data response model"""
+
     business_id: str
     business_name: str
     business_type: str
@@ -58,4 +80,4 @@ class BusinessResponse(BaseModel):
     technology_requirements: Optional[List[str]] = None
     regulatory_requirements: Optional[List[str]] = None
     created_at: str
-    updated_at: str 
+    updated_at: str

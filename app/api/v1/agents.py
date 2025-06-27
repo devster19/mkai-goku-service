@@ -339,8 +339,6 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
             test_log = {
                 "task_id": task_id,
                 "agent_id": agent_id,
-                "test": True,
-                "sync_test": True,
                 "timestamp": db._get_current_time(),
             }
             try:
