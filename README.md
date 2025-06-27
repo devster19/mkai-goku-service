@@ -420,6 +420,41 @@ curl -X POST "http://localhost:8000/api/v1/agents/mcp/callback?task_id=Njg1ZTA1M
   }'
 ```
 
+#### **Response Format**
+The callback now returns the actual MCP result data instead of just task information:
+
+```json
+{
+  "result_id": "685e20ba8e7ecf3da212d414",
+  "task_id": "685e145d21891719b70f8f34",
+  "agent_id": "685dde41b1efd54f0662ab32",
+  "business_id": "685e0265ee376ed320ab6609",
+  "status": "completed",
+  "output": {
+    "text": "Market analysis completed successfully",
+    "images": [],
+    "links": [],
+    "files": [],
+    "data": {
+      "market_size": "1.2B THB",
+      "growth_rate": "8.5%",
+      "key_insights": ["Premium segment growing", "Online sales opportunity"]
+    },
+    "html": null,
+    "markdown": null
+  },
+  "context_update": {
+    "memory": "Market analysis shows strong growth potential in premium segment",
+    "tags": ["market_analysis", "premium_segment", "growth_opportunity"],
+    "metadata": null
+  },
+  "execution_time": 2.5,
+  "error_message": null,
+  "timestamp": "2025-06-27T04:40:26.851298",
+  "created_at": "2025-06-27T04:40:26.851302"
+}
+```
+
 #### **Minimal Example**
 ```bash
 curl -X POST "http://localhost:8000/api/v1/agents/mcp/callback?task_id=Njg1ZTA1MWVlODIwNTk1NTg2NjUyMGYx&token=2d5ab9441fd29d9aee12a19c4b53260acdd1c37665afef037a064edc677abd4c&expires_at=1750995758&signature=NDcwODdkOTZhNDU5MzlmNmVkYmU0NmFhNzU1OTJhMGJmNjBjODg3NmE4NGU5ZD" \
