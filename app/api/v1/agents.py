@@ -25,6 +25,7 @@ from app.schemas.tasks import (
     MCPTaskRequest,
     MCPCallbackRequest,
     TaskResult,
+    MCPCallbackResponse,
 )
 from app.services.agent_service import agent_service
 from app.core.database import db
@@ -1144,7 +1145,7 @@ async def update_mcp_standard_task(task_id: str, update_data: MCPTaskUpdate):
         )
 
 
-@router.post("/mcp/callback", response_model=MCPTaskResponse)
+@router.post("/mcp/callback", response_model=MCPCallbackResponse)
 async def receive_secure_callback(
     request: Request,
     task_id: Optional[str] = None,
@@ -1264,21 +1265,19 @@ async def receive_secure_callback(
 
         print(f"DEBUG: Result stored successfully with ID: {result_id}")
 
-        # Return updated task with simplified response
-        updated_task = task_collection.find_one({"_id": ObjectId(task_id)})
-        updated_task = db._convert_object_id(updated_task)
-
-        return MCPTaskResponse(
-            task_id=updated_task["_id"],
-            agent_id=updated_task["agent_id"],
-            business_id=updated_task.get("business_id"),
-            type=updated_task["type"],
-            params=updated_task["params"],
-            status=updated_task["status"],
-            context=updated_task.get("context"),
-            callback_url=updated_task.get("callback_url"),
-            created_at=updated_task["created_at"],
-            updated_at=updated_task["updated_at"],
+        # Return the actual result data instead of task information
+        return MCPCallbackResponse(
+            result_id=result_id,
+            task_id=task_id,
+            agent_id=task["agent_id"],
+            business_id=task.get("business_id"),
+            status="completed",
+            output=result_doc["output"],
+            context_update=context_update,
+            execution_time=body.get("execution_time"),
+            error_message=body.get("error_message"),
+            timestamp=result_doc["timestamp"],
+            created_at=result_doc["created_at"],
         )
 
     except Exception as e:

@@ -1,6 +1,7 @@
 """
 Task-related Pydantic schemas
 """
+
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 import secrets
@@ -10,12 +11,14 @@ import time
 
 class MCPContext(BaseModel):
     """MCP context model with memory and retriever"""
+
     memory: Optional[str] = None
     retriever: Optional[List[str]] = None
 
 
 class MediaItem(BaseModel):
     """Media item model for images, videos, etc."""
+
     url: str
     caption: Optional[str] = None
     alt_text: Optional[str] = None
@@ -24,6 +27,7 @@ class MediaItem(BaseModel):
 
 class LinkItem(BaseModel):
     """Link item model"""
+
     title: str
     url: str
     description: Optional[str] = None
@@ -31,6 +35,7 @@ class LinkItem(BaseModel):
 
 class FileItem(BaseModel):
     """File item model"""
+
     filename: str
     url: str
     size: Optional[int] = None
@@ -39,6 +44,7 @@ class FileItem(BaseModel):
 
 class TaskOutput(BaseModel):
     """Enhanced task output with rich content"""
+
     text: Optional[str] = None
     images: Optional[List[MediaItem]] = None
     links: Optional[List[LinkItem]] = None
@@ -50,6 +56,7 @@ class TaskOutput(BaseModel):
 
 class ContextUpdate(BaseModel):
     """Context update model"""
+
     memory: Optional[str] = None
     tags: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
@@ -57,16 +64,20 @@ class ContextUpdate(BaseModel):
 
 class MCPTaskRequest(BaseModel):
     """MCP standard task request model"""
+
     description: str
     type: str  # e.g., "content_generation", "analysis", "prediction"
     params: Dict[str, Any]
     context: Optional[MCPContext] = None
     callback_url: Optional[str] = None
-    business_id: Optional[str] = Field(None, description="Business ID this task belongs to")
+    business_id: Optional[str] = Field(
+        None, description="Business ID this task belongs to"
+    )
 
 
 class MCPTaskCreate(BaseModel):
     """MCP task creation model (internal use)"""
+
     description: str
     type: str
     params: Dict[str, Any]
@@ -77,6 +88,7 @@ class MCPTaskCreate(BaseModel):
 
 class MCPTaskUpdate(BaseModel):
     """MCP task update model"""
+
     status: Optional[str] = None  # pending, in_progress, completed, failed
     params: Optional[Dict[str, Any]] = None
     result: Optional[Dict[str, Any]] = None
@@ -88,6 +100,7 @@ class MCPTaskUpdate(BaseModel):
 
 class MCPTaskResult(BaseModel):
     """Enhanced MCP task result model with rich content"""
+
     task_id: Optional[str] = None
     agent_id: Optional[str] = None
     status: Optional[str] = "completed"
@@ -100,12 +113,14 @@ class MCPTaskResult(BaseModel):
 
 class MCPCallbackRequest(BaseModel):
     """MCP callback request model"""
+
     callback_url: Optional[str] = None
     result_data: MCPTaskResult
 
 
 class MCPTaskResponse(BaseModel):
     """Enhanced MCP task response model (internal representation)"""
+
     task_id: str
     agent_id: str
     business_id: Optional[str] = None  # Business this task belongs to
@@ -123,6 +138,7 @@ class MCPTaskResponse(BaseModel):
 
 class MCPResult(BaseModel):
     """MCP result model"""
+
     task_id: str
     agent_id: str
     business_id: Optional[str] = None
@@ -135,6 +151,7 @@ class MCPResult(BaseModel):
 
 class TaskResult(BaseModel):
     """Enhanced task result model for storing detailed results"""
+
     result_id: str
     task_id: str
     agent_id: str
@@ -151,6 +168,7 @@ class TaskResult(BaseModel):
 
 class SecureCallbackInfo(BaseModel):
     """Secure callback information"""
+
     original_url: str
     secure_url: str
     token: str
@@ -160,6 +178,7 @@ class SecureCallbackInfo(BaseModel):
 # Legacy models for backward compatibility
 class TaskRequest(BaseModel):
     """Simple task request model (ChatGPT example style) - DEPRECATED"""
+
     description: str
     type: str  # e.g., "content_generation"
     params: Dict[str, Any]
@@ -169,6 +188,7 @@ class TaskRequest(BaseModel):
 
 class TaskCreate(BaseModel):
     """Task creation model for automation"""
+
     business_name: str
     agent_type: str
     task_type: str
@@ -179,6 +199,7 @@ class TaskCreate(BaseModel):
 
 class TaskUpdate(BaseModel):
     """Task update model for automation"""
+
     status: Optional[str] = None
     results: Optional[Dict[str, Any]] = None
     last_executed: Optional[str] = None
@@ -188,6 +209,7 @@ class TaskUpdate(BaseModel):
 
 class TaskListResponse(BaseModel):
     """Response model for task listing"""
+
     tasks: List[Dict[str, Any]]
     total_count: int
     status_filter: Optional[str] = None
@@ -196,6 +218,22 @@ class TaskListResponse(BaseModel):
 
 class TaskResultResponse(BaseModel):
     """Response model for task result"""
+
     status: str
     task_id: str
-    result_id: Optional[str] = None 
+
+
+class MCPCallbackResponse(BaseModel):
+    """MCP callback response model - returns the actual result data"""
+
+    result_id: str
+    task_id: str
+    agent_id: str
+    business_id: Optional[str] = None
+    status: str
+    output: Optional[TaskOutput] = None
+    context_update: Optional[ContextUpdate] = None
+    execution_time: Optional[float] = None
+    error_message: Optional[str] = None
+    timestamp: str
+    created_at: str
