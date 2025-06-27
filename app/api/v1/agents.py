@@ -3,7 +3,7 @@ Agent API routes
 """
 
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from fastapi.responses import JSONResponse
 
 from app.schemas.agents import (
@@ -1146,21 +1146,31 @@ async def update_mcp_standard_task(task_id: str, update_data: MCPTaskUpdate):
 
 @router.post("/mcp/callback", response_model=MCPTaskResponse)
 async def receive_secure_callback(
-    callback_request: MCPCallbackRequest,
+    request: Request,
     task_id: Optional[str] = None,
     token: Optional[str] = None,
     expires_at: Optional[str] = None,
     signature: Optional[str] = None,
 ):
-    """Receive secure callback result from agent with enhanced content"""
+    """Receive secure callback result from agent with simplified format: {output: {}, context_update: {}}"""
     try:
-        print(
-            f"DEBUG: Received callback request with URL: {callback_request.callback_url}"
-        )
+        print(f"DEBUG: Received callback request")
         print(
             f"DEBUG: Query params - task_id: {task_id}, token: {token}, expires_at: {expires_at}, signature: {signature}"
         )
-        print(f"DEBUG: Result data: {callback_request.result_data}")
+
+        # Get raw request body
+        body = await request.json()
+        print(f"DEBUG: Request body: {body}")
+
+        # Simplified format: expect {output: {}, context_update: {}}
+        if "output" not in body:
+            raise HTTPException(
+                status_code=400, detail="Missing 'output' field in request body"
+            )
+
+        output_data = body["output"]
+        context_update = body.get("context_update", {})
 
         # TEMPORARY: Bypass signature verification for testing
         decoded_task_id = None
@@ -1213,6 +1223,15 @@ async def receive_secure_callback(
         if result_collection is None:
             raise HTTPException(status_code=500, detail="Database connection failed")
 
+        # Extract fields from output object
+        text = output_data.get("text")
+        images = output_data.get("images", [])
+        links = output_data.get("links", [])
+        files = output_data.get("files", [])
+        data = output_data.get("data", {})
+        html = output_data.get("html")
+        markdown = output_data.get("markdown")
+
         # Simplified result document structure
         result_doc = {
             "task_id": task_id,
@@ -1220,46 +1239,25 @@ async def receive_secure_callback(
             "business_id": task.get("business_id"),
             "status": "completed",  # Always completed when stored in results
             "output": {
-                "text": (
-                    callback_request.result_data.output.text
-                    if callback_request.result_data.output
-                    else None
-                ),
-                "images": (
-                    [img.dict() for img in callback_request.result_data.output.images]
-                    if callback_request.result_data.output
-                    and callback_request.result_data.output.images
-                    else []
-                ),
-                "links": (
-                    [link.dict() for link in callback_request.result_data.output.links]
-                    if callback_request.result_data.output
-                    and callback_request.result_data.output.links
-                    else []
-                ),
-                "files": (
-                    [file.dict() for file in callback_request.result_data.output.files]
-                    if callback_request.result_data.output
-                    and callback_request.result_data.output.files
-                    else []
-                ),
+                "text": text,
+                "images": images,
+                "links": links,
+                "files": files,
+                "data": data,
+                "html": html,
+                "markdown": markdown,
             },
-            "context_update": (
-                callback_request.result_data.context_update.dict()
-                if callback_request.result_data.context_update
-                else None
-            ),
-            "timestamp": callback_request.result_data.timestamp
-            or db._get_current_time(),
+            "context_update": context_update,
+            "timestamp": body.get("timestamp") or db._get_current_time(),
             "created_at": db._get_current_time(),
         }
 
         # Add optional fields if they exist
-        if callback_request.result_data.execution_time:
-            result_doc["execution_time"] = callback_request.result_data.execution_time
+        if body.get("execution_time"):
+            result_doc["execution_time"] = body["execution_time"]
 
-        if callback_request.result_data.error_message:
-            result_doc["error_message"] = callback_request.result_data.error_message
+        if body.get("error_message"):
+            result_doc["error_message"] = body["error_message"]
 
         result_insert = result_collection.insert_one(result_doc)
         result_id = str(result_insert.inserted_id)
