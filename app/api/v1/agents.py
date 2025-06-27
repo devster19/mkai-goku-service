@@ -33,17 +33,136 @@ from app.utils.security import callback_manager
 router = APIRouter()
 
 
-@router.post("/register", response_model=AgentResponse, status_code=201)
-async def register_agent(agent_data: AgentRegister):
-    """Register a new agent"""
+@router.get("/types", response_model=AgentTypeList)
+async def get_agent_types(
+    category: Optional[str] = Query(None, description="Filter by category"),
+    active_only: bool = Query(True, description="Show only active agent types"),
+):
+    """Get all agent types with optional filtering"""
     try:
-        agent = agent_service.register_agent(agent_data)
-        if not agent:
-            raise HTTPException(status_code=500, detail="Failed to register agent")
-        return agent
+        agent_types = agent_service.get_all_agent_types(
+            category=category, active_only=active_only
+        )
+        return AgentTypeList(
+            agent_types=agent_types,
+            total_count=len(agent_types),
+            category_filter=category,
+        )
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error registering agent: {str(e)}"
+            status_code=500, detail=f"Error retrieving agent types: {str(e)}"
+        )
+
+
+@router.get("/types/{type_id}", response_model=AgentType)
+async def get_agent_type(type_id: str):
+    """Get specific agent type by type_id"""
+    try:
+        agent_type = agent_service.get_agent_type(type_id)
+        if not agent_type:
+            raise HTTPException(status_code=404, detail="Agent type not found")
+        return agent_type
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving agent type: {str(e)}"
+        )
+
+
+@router.post("/types", response_model=AgentType, status_code=201)
+async def create_agent_type(agent_type_data: AgentType):
+    """Create a new agent type"""
+    try:
+        agent_type = agent_service.create_agent_type(agent_type_data)
+        if not agent_type:
+            raise HTTPException(status_code=500, detail="Failed to create agent type")
+        return agent_type
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error creating agent type: {str(e)}"
+        )
+
+
+@router.post("/types/initialize", response_model=dict)
+async def initialize_default_agent_types():
+    """Initialize default agent types if they don't exist"""
+    try:
+        success = agent_service.initialize_default_agent_types()
+        if success:
+            return {
+                "message": "Default agent types initialized successfully",
+                "status": "success",
+            }
+        else:
+            return {"message": "Failed to initialize agent types", "status": "error"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error initializing agent types: {str(e)}"
+        )
+
+
+@router.put("/types/{type_id}", response_model=AgentType)
+async def update_agent_type(type_id: str, update_data: AgentType):
+    """Update an agent type"""
+    try:
+        agent_type = agent_service.update_agent_type(type_id, update_data)
+        if not agent_type:
+            raise HTTPException(
+                status_code=404, detail="Agent type not found or no changes made"
+            )
+        return agent_type
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error updating agent type: {str(e)}"
+        )
+
+
+@router.delete("/types/{type_id}")
+async def delete_agent_type(type_id: str):
+    """Delete an agent type"""
+    try:
+        success = agent_service.delete_agent_type(type_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Agent type not found")
+        return {"message": "Agent type deleted successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting agent type: {str(e)}"
+        )
+
+
+@router.get("/types/categories", response_model=List[str])
+async def get_agent_type_categories():
+    """Get all agent type categories"""
+    try:
+        categories = agent_service.get_agent_type_categories()
+        return categories
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving agent type categories: {str(e)}"
+        )
+
+
+@router.get("/search/{query}", response_model=AgentSearchResponse)
+async def search_agents(query: str):
+    """Search agents by name, description, or capabilities"""
+    try:
+        agents = agent_service.search_agents(query)
+        return AgentSearchResponse(
+            agents=agents, total_count=len(agents), search_query=query
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching agents: {str(e)}")
+
+
+@router.get("/capability/{capability}", response_model=List[AgentResponse])
+async def get_agents_by_capability(capability: str):
+    """Get agents that have a specific capability"""
+    try:
+        agents = agent_service.get_agents_by_capability(capability)
+        return agents
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error getting agents by capability: {str(e)}"
         )
 
 
@@ -57,6 +176,20 @@ async def get_agent(agent_id: str):
         return agent
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving agent: {str(e)}")
+
+
+@router.post("/register", response_model=AgentResponse, status_code=201)
+async def register_agent(agent_data: AgentRegister):
+    """Register a new agent"""
+    try:
+        agent = agent_service.register_agent(agent_data)
+        if not agent:
+            raise HTTPException(status_code=500, detail="Failed to register agent")
+        return agent
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error registering agent: {str(e)}"
+        )
 
 
 @router.get("/", response_model=AgentListResponse)
@@ -103,30 +236,6 @@ async def delete_agent(agent_id: str):
         raise HTTPException(status_code=500, detail=f"Error deleting agent: {str(e)}")
 
 
-@router.get("/search/{query}", response_model=AgentSearchResponse)
-async def search_agents(query: str):
-    """Search agents by name, description, or capabilities"""
-    try:
-        agents = agent_service.search_agents(query)
-        return AgentSearchResponse(
-            agents=agents, total_count=len(agents), search_query=query
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error searching agents: {str(e)}")
-
-
-@router.get("/capability/{capability}", response_model=List[AgentResponse])
-async def get_agents_by_capability(capability: str):
-    """Get agents that have a specific capability"""
-    try:
-        agents = agent_service.get_agents_by_capability(capability)
-        return agents
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting agents by capability: {str(e)}"
-        )
-
-
 # Simple agent registration (ChatGPT example style)
 @router.post("/simple/register", response_model=AgentResponse, status_code=201)
 async def register_simple_agent(agent_data: SimpleAgentRegistration):
@@ -154,137 +263,9 @@ async def register_simple_agent(agent_data: SimpleAgentRegistration):
         )
 
 
-# Agent Type Management Endpoints
-
-
-@router.get("/types", response_model=AgentTypeList)
-async def get_agent_types(
-    category: Optional[str] = Query(None, description="Filter by category"),
-    active_only: bool = Query(True, description="Show only active agent types"),
-):
-    """Get all agent types with optional filtering"""
-    try:
-        agent_types = agent_service.get_all_agent_types(
-            category=category, active_only=active_only
-        )
-        return AgentTypeList(
-            agent_types=agent_types,
-            total_count=len(agent_types),
-            category_filter=category,
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving agent types: {str(e)}"
-        )
-
-
-@router.get("/types/{type_id}", response_model=AgentType)
-async def get_agent_type(type_id: str):
-    """Get specific agent type by type_id"""
-    try:
-        agent_type = agent_service.get_agent_type(type_id)
-        if not agent_type:
-            raise HTTPException(status_code=404, detail="Agent type not found")
-        return agent_type
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving agent type: {str(e)}"
-        )
-
-
-@router.post("/types", response_model=AgentType, status_code=201)
-async def create_agent_type(agent_type_data: AgentType):
-    """Create a new agent type"""
-    try:
-        agent_type = agent_service.create_agent_type(agent_type_data)
-        if not agent_type:
-            raise HTTPException(
-                status_code=400, detail="Agent type already exists or creation failed"
-            )
-        return agent_type
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error creating agent type: {str(e)}"
-        )
-
-
-@router.post("/types/initialize", response_model=dict)
-async def initialize_default_agent_types():
-    """Initialize default agent types (admin endpoint)"""
-    try:
-        success = agent_service.initialize_default_agent_types()
-        if success:
-            return {
-                "message": "Default agent types initialized successfully",
-                "status": "success",
-            }
-        else:
-            raise HTTPException(
-                status_code=500, detail="Failed to initialize default agent types"
-            )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error initializing agent types: {str(e)}"
-        )
-
-
-@router.put("/types/{type_id}", response_model=AgentType)
-async def update_agent_type(type_id: str, update_data: AgentType):
-    """Update an agent type"""
-    try:
-        # Create update data with the same structure as AgentType but make fields optional
-        from app.schemas.agents import AgentTypeUpdate
-
-        update_dict = update_data.model_dump(exclude_unset=True)
-        update_dict["type_id"] = type_id  # Ensure type_id is preserved
-
-        # Convert to AgentTypeUpdate for partial updates
-        update_obj = AgentTypeUpdate(**update_dict)
-
-        agent_type = agent_service.update_agent_type(type_id, update_obj)
-        if not agent_type:
-            raise HTTPException(
-                status_code=404, detail="Agent type not found or no changes made"
-            )
-        return agent_type
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error updating agent type: {str(e)}"
-        )
-
-
-@router.delete("/types/{type_id}")
-async def delete_agent_type(type_id: str):
-    """Delete an agent type"""
-    try:
-        success = agent_service.delete_agent_type(type_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Agent type not found")
-        return {"message": "Agent type deleted successfully"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error deleting agent type: {str(e)}"
-        )
-
-
-@router.get("/types/categories", response_model=List[str])
-async def get_agent_type_categories():
-    """Get all available agent type categories"""
-    try:
-        collection = db.get_collection("agent_types")
-        if not collection:
-            return []
-
-        # Get distinct categories
-        categories = collection.distinct("category")
-        return sorted(categories)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving agent type categories: {str(e)}"
-        )
-
-
 # MCP Task Management Endpoints
+
+
 @router.post("/{agent_id}/tasks", response_model=MCPTaskResponse, status_code=201)
 async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
     """Create a new MCP task for an agent using MCP standard format"""
@@ -583,7 +564,6 @@ async def get_agent_mcp_tasks(agent_id: str, status: Optional[str] = Query(None)
             )
             for task in tasks
         ]
-
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error getting MCP tasks: {str(e)}"
@@ -930,8 +910,6 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
             test_log = {
                 "task_id": task_id,
                 "agent_id": agent_id,
-                "test": True,
-                "sync_test": True,
                 "timestamp": db._get_current_time(),
             }
             try:

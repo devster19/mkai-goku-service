@@ -1,12 +1,19 @@
 """
 Agent service for handling agent operations
 """
+
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import logging
 
 from app.core.database import db
-from app.schemas.agents import AgentRegister, AgentUpdate, AgentResponse, AgentType, AgentTypeList
+from app.schemas.agents import (
+    AgentRegister,
+    AgentUpdate,
+    AgentResponse,
+    AgentType,
+    AgentTypeList,
+)
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -23,7 +30,7 @@ class AgentService:
             if agent_type is None:
                 logger.error(f"❌ Agent type '{agent_data.agent_type}' not found")
                 return None
-            
+
             if not agent_type.is_active:
                 logger.error(f"❌ Agent type '{agent_data.agent_type}' is not active")
                 return None
@@ -84,7 +91,7 @@ class AgentService:
             agent_id = str(result.inserted_id)
 
             logger.info(f"✅ Saved agent '{agent_data.agent_name}' with ID: {agent_id}")
-            
+
             # Return the created agent
             return self.get_agent(agent_id)
 
@@ -100,8 +107,9 @@ class AgentService:
                 return None
 
             from bson import ObjectId
+
             agent = collection.find_one({"_id": ObjectId(agent_id)})
-            
+
             if not agent:
                 return None
 
@@ -120,14 +128,16 @@ class AgentService:
                 configuration=agent.get("configuration"),
                 mcp_support=agent.get("mcp_support", False),
                 created_at=agent["created_at"],
-                updated_at=agent["updated_at"]
+                updated_at=agent["updated_at"],
             )
 
         except Exception as e:
             logger.error(f"❌ Error retrieving agent: {e}")
             return None
 
-    def get_all_agents(self, status: Optional[str] = None, agent_type: Optional[str] = None) -> List[AgentResponse]:
+    def get_all_agents(
+        self, status: Optional[str] = None, agent_type: Optional[str] = None
+    ) -> List[AgentResponse]:
         """Get all agents with optional filtering"""
         try:
             collection = db.get_collection("agents")
@@ -158,7 +168,7 @@ class AgentService:
                     configuration=agent.get("configuration"),
                     mcp_support=agent.get("mcp_support", False),
                     created_at=agent["created_at"],
-                    updated_at=agent["updated_at"]
+                    updated_at=agent["updated_at"],
                 )
                 for agent in agents
             ]
@@ -167,7 +177,9 @@ class AgentService:
             logger.error(f"❌ Error retrieving agents: {e}")
             return []
 
-    def update_agent(self, agent_id: str, update_data: AgentUpdate) -> Optional[AgentResponse]:
+    def update_agent(
+        self, agent_id: str, update_data: AgentUpdate
+    ) -> Optional[AgentResponse]:
         """Update an agent"""
         try:
             collection = db.get_collection("agents")
@@ -195,7 +207,7 @@ class AgentService:
             if success:
                 logger.info(f"✅ Updated agent: {agent_id}")
                 return self.get_agent(agent_id)
-            
+
             return None
 
         except Exception as e:
@@ -210,6 +222,7 @@ class AgentService:
                 return False
 
             from bson import ObjectId
+
             result = collection.delete_one({"_id": ObjectId(agent_id)})
 
             success = result.deleted_count > 0
@@ -255,7 +268,7 @@ class AgentService:
                     configuration=agent.get("configuration"),
                     mcp_support=agent.get("mcp_support", False),
                     created_at=agent["created_at"],
-                    updated_at=agent["updated_at"]
+                    updated_at=agent["updated_at"],
                 )
                 for agent in agents
             ]
@@ -274,7 +287,7 @@ class AgentService:
             # Find agents with the specified capability
             query = {
                 "capabilities": {"$regex": capability, "$options": "i"},
-                "status": "active"
+                "status": "active",
             }
 
             agents = list(collection.find(query))
@@ -295,7 +308,7 @@ class AgentService:
                     configuration=agent.get("configuration"),
                     mcp_support=agent.get("mcp_support", False),
                     created_at=agent["created_at"],
-                    updated_at=agent["updated_at"]
+                    updated_at=agent["updated_at"],
                 )
                 for agent in agents
             ]
@@ -336,8 +349,10 @@ class AgentService:
             result = collection.insert_one(agent_type_doc)
             type_id = str(result.inserted_id)
 
-            logger.info(f"✅ Created agent type '{agent_type_data.name}' with ID: {type_id}")
-            
+            logger.info(
+                f"✅ Created agent type '{agent_type_data.name}' with ID: {type_id}"
+            )
+
             return self.get_agent_type(agent_type_data.type_id)
 
         except Exception as e:
@@ -352,7 +367,7 @@ class AgentService:
                 return None
 
             agent_type = collection.find_one({"type_id": type_id})
-            
+
             if not agent_type:
                 return None
 
@@ -364,14 +379,16 @@ class AgentService:
                 category=agent_type["category"],
                 capabilities=agent_type["capabilities"],
                 is_active=agent_type["is_active"],
-                version=agent_type["version"]
+                version=agent_type["version"],
             )
 
         except Exception as e:
             logger.error(f"❌ Error retrieving agent type: {e}")
             return None
 
-    def get_all_agent_types(self, category: Optional[str] = None, active_only: bool = True) -> List[AgentType]:
+    def get_all_agent_types(
+        self, category: Optional[str] = None, active_only: bool = True
+    ) -> List[AgentType]:
         """Get all agent types with optional filtering"""
         try:
             collection = db.get_collection("agent_types")
@@ -395,7 +412,7 @@ class AgentService:
                     category=agent_type["category"],
                     capabilities=agent_type["capabilities"],
                     is_active=agent_type["is_active"],
-                    version=agent_type["version"]
+                    version=agent_type["version"],
                 )
                 for agent_type in agent_types
             ]
@@ -422,15 +439,13 @@ class AgentService:
             # Add updated_at timestamp
             update_dict["updated_at"] = datetime.utcnow()
 
-            result = collection.update_one(
-                {"type_id": type_id}, {"$set": update_dict}
-            )
+            result = collection.update_one({"type_id": type_id}, {"$set": update_dict})
 
             success = result.modified_count > 0
             if success:
                 logger.info(f"✅ Updated agent type: {type_id}")
                 return self.get_agent_type(type_id)
-            
+
             return None
 
         except Exception as e:
@@ -465,7 +480,9 @@ class AgentService:
             # Check if agent types already exist
             existing_count = collection.count_documents({})
             if existing_count > 0:
-                logger.info(f"Agent types already exist ({existing_count} found), skipping initialization")
+                logger.info(
+                    f"Agent types already exist ({existing_count} found), skipping initialization"
+                )
                 return True
 
             # Default agent types
@@ -475,72 +492,112 @@ class AgentService:
                     name="Analytics Agent",
                     description="Specialized in data analysis and business intelligence",
                     category="analysis",
-                    capabilities=["data_analysis", "business_intelligence", "reporting", "metrics"],
+                    capabilities=[
+                        "data_analysis",
+                        "business_intelligence",
+                        "reporting",
+                        "metrics",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="financial_agent",
                     name="Financial Agent",
                     description="Handles financial analysis, forecasting, and risk assessment",
                     category="financial",
-                    capabilities=["financial_analysis", "forecasting", "risk_assessment", "budgeting"],
+                    capabilities=[
+                        "financial_analysis",
+                        "forecasting",
+                        "risk_assessment",
+                        "budgeting",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="creative_agent",
                     name="Creative Agent",
                     description="Generates creative content, ideas, and marketing strategies",
                     category="creative",
-                    capabilities=["content_generation", "idea_generation", "marketing_strategy", "branding"],
+                    capabilities=[
+                        "content_generation",
+                        "idea_generation",
+                        "marketing_strategy",
+                        "branding",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="strategic_agent",
                     name="Strategic Agent",
                     description="Develops business strategies and long-term planning",
                     category="strategic",
-                    capabilities=["strategic_planning", "market_analysis", "competitive_analysis", "business_modeling"],
+                    capabilities=[
+                        "strategic_planning",
+                        "market_analysis",
+                        "competitive_analysis",
+                        "business_modeling",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="sales_agent",
                     name="Sales Agent",
                     description="Manages sales processes and customer relationship management",
                     category="sales",
-                    capabilities=["sales_automation", "crm", "lead_generation", "customer_analysis"],
+                    capabilities=[
+                        "sales_automation",
+                        "crm",
+                        "lead_generation",
+                        "customer_analysis",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="swot_agent",
                     name="SWOT Analysis Agent",
                     description="Performs SWOT analysis and competitive intelligence",
                     category="analysis",
-                    capabilities=["swot_analysis", "competitive_intelligence", "market_research", "risk_assessment"],
+                    capabilities=[
+                        "swot_analysis",
+                        "competitive_intelligence",
+                        "market_research",
+                        "risk_assessment",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="business_model_agent",
                     name="Business Model Agent",
                     description="Analyzes and optimizes business models",
                     category="strategic",
-                    capabilities=["business_model_analysis", "revenue_modeling", "cost_structure_analysis", "value_proposition"],
+                    capabilities=[
+                        "business_model_analysis",
+                        "revenue_modeling",
+                        "cost_structure_analysis",
+                        "value_proposition",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="manager_agent",
                     name="Manager Agent",
                     description="Coordinates and manages other agents and workflows",
                     category="management",
-                    capabilities=["workflow_management", "agent_coordination", "project_management", "task_allocation"],
+                    capabilities=[
+                        "workflow_management",
+                        "agent_coordination",
+                        "project_management",
+                        "task_allocation",
+                    ],
                     is_active=True,
-                    version="1.0.0"
+                    version="1.0.0",
                 ),
                 AgentType(
                     type_id="custom_agent",
@@ -549,8 +606,8 @@ class AgentService:
                     category="custom",
                     capabilities=["custom_capabilities"],
                     is_active=True,
-                    version="1.0.0"
-                )
+                    version="1.0.0",
+                ),
             ]
 
             # Insert default agent types
@@ -566,4 +623,4 @@ class AgentService:
 
 
 # Global service instance
-agent_service = AgentService() 
+agent_service = AgentService()
