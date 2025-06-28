@@ -65,7 +65,7 @@ class ContextUpdate(BaseModel):
 class MCPTaskRequest(BaseModel):
     """MCP standard task request model"""
 
-    description: str
+    query: str
     type: str  # e.g., "content_generation", "analysis", "prediction"
     params: Dict[str, Any]
     context: Optional[MCPContext] = None
@@ -73,6 +73,9 @@ class MCPTaskRequest(BaseModel):
     business_id: Optional[str] = Field(
         None, description="Business ID this task belongs to"
     )
+    llm_params: Optional[Dict[str, Any]] = None
+    tools: Optional[Dict[str, Any]] = None
+    output_preferences: Optional[Dict[str, Any]] = None
 
 
 class MCPTaskCreate(BaseModel):
