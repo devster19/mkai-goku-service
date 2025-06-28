@@ -272,15 +272,27 @@ Creates a new MCP task that will be automatically assigned to an available agent
 #### Request Body
 ```json
 {
-  "description": "string",             // REQUIRED: Task description
-  "type": "string",                    // REQUIRED: Task type (e.g., "content_generation", "analysis")
-  "params": {},                        // REQUIRED: Task parameters
-  "context": {                         // OPTIONAL: MCP context
-    "memory": "string",
-    "retriever": ["string"]
+  "query": "Analyze market trends for premium tissue products in Thailand for 2024–2025.",
+  "type": "market_analysis",
+  "params": {
+    "market_segment": "premium_tissue",
+    "geographic_region": "Thailand",
+    "time_period": "2024-2025"
   },
-  "callback_url": "string",            // OPTIONAL: Custom callback URL
-  "business_id": "string"              // OPTIONAL: Associated business ID
+  "business_id": "685e0265ee376ed320ab6609",
+  "llm_params": {
+    "model": "gpt-4-turbo",
+    "temperature": 0.3,
+    "max_tokens": 1200
+  },
+  "output_preferences": {
+    "format": "markdown",
+    "audience": "executive_summary"
+  },
+  "tools": {
+    "enable_web_search": true,
+    "use_internal_market_data": true
+  }
 }
 ```
 
@@ -289,14 +301,27 @@ Creates a new MCP task that will be automatically assigned to an available agent
 curl -X POST "http://localhost:8000/api/v1/agents/mcp/task" \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "Analyze market trends for tissue products",
+    "query": "Analyze market trends for premium tissue products in Thailand for 2024–2025.",
     "type": "market_analysis",
     "params": {
       "market_segment": "premium_tissue",
       "geographic_region": "Thailand",
       "time_period": "2024-2025"
     },
-    "business_id": "685e0265ee376ed320ab6609"
+    "business_id": "685e0265ee376ed320ab6609",
+    "llm_params": {
+      "model": "gpt-4-turbo",
+      "temperature": 0.3,
+      "max_tokens": 1200
+    },
+    "output_preferences": {
+      "format": "markdown",
+      "audience": "executive_summary"
+    },
+    "tools": {
+      "enable_web_search": true,
+      "use_internal_market_data": true
+    }
   }'
 ```
 
@@ -1114,14 +1139,27 @@ curl -X POST "http://localhost:8000/api/v1/agents/register" \
 curl -X POST "http://localhost:8000/api/v1/agents/mcp/task" \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "Analyze competitive landscape for business analytics platform",
-    "type": "competitive_analysis",
+    "query": "Analyze market trends for premium tissue products in Thailand for 2024–2025.",
+    "type": "market_analysis",
     "params": {
-      "competitors": ["Tableau", "Power BI", "Looker"],
-      "market_focus": "SME segment",
-      "geographic_region": "Southeast Asia"
+      "market_segment": "premium_tissue",
+      "geographic_region": "Thailand",
+      "time_period": "2024-2025"
     },
-    "business_id": "685e0265ee376ed320ab6609"
+    "business_id": "685e0265ee376ed320ab6609",
+    "llm_params": {
+      "model": "gpt-4-turbo",
+      "temperature": 0.3,
+      "max_tokens": 1200
+    },
+    "output_preferences": {
+      "format": "markdown",
+      "audience": "executive_summary"
+    },
+    "tools": {
+      "enable_web_search": true,
+      "use_internal_market_data": true
+    }
   }'
 ```
 
