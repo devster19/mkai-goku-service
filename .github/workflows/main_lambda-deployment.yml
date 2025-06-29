@@ -24,11 +24,11 @@ jobs:
 
       - name: List files for debug
         run: ls -lR mkai-goku-service/app
-        
-      - name: Zip Lambda function (contents of app/)
+
+      - name: Zip Lambda function (robust)
         run: |
           cd mkai-goku-service/app
-          zip -r ../../lambda_function.zip .
+          find . -type f | zip ../../lambda_function.zip -@
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
