@@ -25,7 +25,11 @@ jobs:
               zip -r /app/lambda_function.zip .
             "
 
-
+      - name: Install dependencies to temporary folder
+        run: |
+          mkdir -p build
+          pip install -r mkai-goku-service/requirements.txt -t build
+          cp -r mkai-goku-service/app/* build/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
