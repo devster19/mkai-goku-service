@@ -18,17 +18,16 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies into app folder
+      - name: Install dependencies to temporary folder
         run: |
-          pip install -r mkai-goku-service/requirements.txt -t mkai-goku-service/app
+          mkdir -p build
+          pip install -r mkai-goku-service/requirements.txt -t build
+          cp -r mkai-goku-service/app/* build/
 
-      - name: List files for debug
-        run: ls -lR mkai-goku-service/app
-
-      - name: Zip Lambda function (robust)
+      - name: Zip deployment package
         run: |
-          cd mkai-goku-service/app
-          find . -type f | zip ../../lambda_function.zip -@
+          cd build
+          zip -r ../lambda_function.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -37,8 +36,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy to Lambda
+      - name: Deploy to AWS Lambda
         run: |
           aws lambda update-function-code \
-            --function-name arn:aws:lambda:ap-southeast-2:712137513056:function:mkai-goku-service \
+            --function-name mkai-goku-service \
             --zip-file fileb://lambda_function.zip
