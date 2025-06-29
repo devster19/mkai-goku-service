@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+from mangum import Mangum
 
 from app.core.config import settings
 from app.core.database import db
@@ -154,6 +155,9 @@ async def health_check():
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Health check failed: {str(e)}")
+
+
+handler = Mangum(app)
 
 
 if __name__ == "__main__":

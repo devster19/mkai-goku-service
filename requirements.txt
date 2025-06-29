@@ -11,4 +11,5 @@ asyncio-mqtt==0.16.1
 aiofiles==23.2.1
 tqdm==4.67.1 
 schedule==1.2.0
-requests==2.31.0 
+requests==2.31.0
+mangum 
