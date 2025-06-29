@@ -20,14 +20,13 @@ jobs:
 
       - name: Install dependencies to temporary folder
         run: |
-          mkdir -p build
-          pip install -r requirements.txt -t build
-          cp -r app/* build/
-
-      - name: Zip deployment package
-        run: |
-          cd build
-          zip -r ../lambda_function.zip .
+          docker run --rm -v "$PWD":/var/task -w /var/task public.ecr.aws/lambda/python:3.9 \
+            /bin/bash -c "
+              pip install -r mkai-goku-service/requirements.txt -t build && \
+              cp -r mkai-goku-service/app/* build/ && \
+              cd build && \
+              zip -r ../lambda_function.zip .
+            "
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
