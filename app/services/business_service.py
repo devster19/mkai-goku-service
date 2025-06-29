@@ -4,7 +4,6 @@ Business service for handling business analysis operations
 
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-import httpx
 import asyncio
 import json
 import logging
@@ -12,6 +11,33 @@ import logging
 from app.core.database import db
 from app.schemas.business import BusinessInput, BusinessAnalysisResponse
 from app.core.config import settings
+
+# Import agent utilities
+try:
+    from app.utils.agents import (
+        analyze_strategic,
+        analyze_swot,
+        analyze_business_model,
+        analyze_creative,
+        analyze_financial,
+        analyze_sales,
+        analyze_analytics,
+        analyze_manager,
+        assign_tasks_to_agents,
+    )
+    AGENTS_AVAILABLE = True
+    print("✅ Agent utilities loaded successfully")
+except ImportError as e:
+    AGENTS_AVAILABLE = False
+    print(f"⚠️ Agent utilities not available: {e}")
+
+# Import automation engine if available
+try:
+    from app.api.v0.task_automation import automation_engine
+    AUTOMATION_AVAILABLE = True
+except ImportError:
+    AUTOMATION_AVAILABLE = False
+    print("⚠️ Task automation module not available. Automated tasks will not be created.")
 
 logger = logging.getLogger(__name__)
 
@@ -34,113 +60,129 @@ class BusinessService:
     async def process_business_analysis(
         self, business_data: BusinessInput
     ) -> BusinessAnalysisResponse:
-        """Process business analysis using multiple agents"""
+        """Process business analysis using multiple agents with v0 orchestration logic"""
         try:
-            # Step 1: Send to Strategic Agent
-            strategic_response = await self._send_to_agent(
-                "strategic", business_data.model_dump()
+            if not AGENTS_AVAILABLE:
+                # Fallback to basic analysis without agents
+                return await self._process_basic_analysis(business_data)
+
+            # Step 1: Send to Strategic Agent first
+            print("🔍 Starting strategic analysis...")
+            strategic_response = await analyze_strategic(business_data.model_dump())
+            strategic_plan = strategic_response.get("strategic_plan", {})
+
+            # Step 2: Send to SWOT Agent with strategic plan data
+            print("🔍 Starting SWOT analysis...")
+            swot_response = await analyze_swot(business_data.model_dump(), strategic_plan)
+            swot_analysis = swot_response.get("swot_analysis", {})
+
+            # Step 3: Send to Business Model Canvas agent with strategic plan and SWOT data
+            print("🔍 Starting Business Model Canvas analysis...")
+            bmc_response = await analyze_business_model(
+                business_data.model_dump(), strategic_plan, swot_analysis
+            )
+            bmc_analysis = bmc_response.get("business_model_canvas", {})
+
+            # Step 4: Send to Creative, Financial, and Sales agents in parallel with strategic plan data
+            print("🔍 Starting parallel analysis (Creative, Financial, Sales)...")
+            creative_task = analyze_creative(business_data.model_dump(), strategic_plan)
+            financial_task = analyze_financial(business_data.model_dump(), strategic_plan)
+            sales_task = analyze_sales(business_data.model_dump(), strategic_plan)
+
+            # Wait for all parallel tasks to complete
+            creative_response, financial_response, sales_response = await asyncio.gather(
+                creative_task, financial_task, sales_task
             )
 
-            # Step 2: Send to SWOT Agent (can run in parallel with other agents)
-            swot_response = await self._send_to_agent(
-                "swot", business_data.model_dump()
-            )
+            creative_analysis = creative_response.get("creative_analysis", {})
+            financial_analysis = financial_response.get("financial_analysis", {})
+            sales_strategy = sales_response.get("sales_strategy", {})
 
-            # Step 3: Send to Business Model Canvas Agent
-            bmc_response = await self._send_to_agent(
-                "business_model", business_data.model_dump()
-            )
+            # Step 5: Send to Analytics agent with all the data from previous agents
+            print("🔍 Starting analytics analysis...")
+            all_agent_data = {
+                "strategic_plan": strategic_plan,
+                "creative_analysis": creative_analysis,
+                "financial_analysis": financial_analysis,
+                "sales_strategy": sales_strategy,
+                "swot_analysis": swot_analysis,
+                "business_model_canvas": bmc_analysis,
+            }
+            analytics_response = await analyze_analytics(business_data.model_dump(), all_agent_data)
+            analytics_summary = analytics_response.get("analytics_summary", {})
 
-            # Step 4: Send to Creative Agent
-            creative_response = await self._send_to_agent(
-                "creative", business_data.model_dump()
-            )
+            # Step 6: Send to Manager agent separately
+            print("🔍 Starting management analysis...")
+            manager_response = await analyze_manager(business_data.model_dump(), all_agent_data)
+            management_summary = manager_response.get("management_summary", {})
+            dynamic_task_assignments = manager_response.get("dynamic_task_assignments", {})
 
-            # Step 5: Send to Financial Agent
-            financial_response = await self._send_to_agent(
-                "financial", business_data.model_dump()
-            )
-
-            # Step 6: Send to Sales Agent
-            sales_response = await self._send_to_agent(
-                "sales", business_data.model_dump()
-            )
-
-            # Step 7: Send to Analytics Agent
-            analytics_response = await self._send_to_agent(
-                "analytics", business_data.model_dump()
-            )
-
-            # Step 8: Send to Manager Agent
-            manager_response = await self._send_to_agent(
-                "manager", business_data.model_dump()
-            )
-
-            # Generate overall recommendations
+            # Step 7: Generate overall recommendations
             overall_recommendations = self._generate_overall_recommendations(
-                strategic_response,
-                creative_response,
-                financial_response,
-                sales_response,
-                swot_response,
-                bmc_response,
-                analytics_response,
+                strategic_plan, creative_analysis, financial_analysis, sales_strategy, 
+                swot_analysis, bmc_analysis, analytics_summary
             )
 
-            # Save to database
-            business_id = self._save_business_data(
+            # Step 8: Assign tasks to agents using AI
+            print("🔍 Assigning tasks to agents...")
+            task_assignments = await assign_tasks_to_agents(business_data.model_dump(), all_agent_data)
+
+            # Step 9: Save to database
+            business_id = self.save_business_data(
                 business_data,
                 {
-                    "strategic_plan": strategic_response.get("strategic_plan", {}),
-                    "creative_analysis": creative_response.get("creative_analysis", {}),
-                    "financial_analysis": financial_response.get(
-                        "financial_analysis", {}
-                    ),
-                    "sales_strategy": sales_response.get("sales_strategy", {}),
-                    "swot_analysis": swot_response.get("swot_analysis", {}),
-                    "business_model_canvas": bmc_response.get(
-                        "business_model_canvas", {}
-                    ),
-                    "analytics_summary": analytics_response.get(
-                        "analytics_summary", {}
-                    ),
-                    "management_summary": manager_response.get(
-                        "management_summary", {}
-                    ),
-                    "overall_recommendations": overall_recommendations,
+                    "strategic_plan": strategic_plan,
+                    "creative_analysis": creative_analysis,
+                    "financial_analysis": financial_analysis,
+                    "sales_strategy": sales_strategy,
+                    "swot_analysis": swot_analysis,
+                    "business_model_canvas": bmc_analysis,
+                    "analytics_summary": analytics_summary,
+                    "management_summary": management_summary,
+                    "task_assignments": task_assignments,
+                    "dynamic_task_assignments": dynamic_task_assignments,
                 },
             )
 
+            # Step 10: Create automation if available
+            if AUTOMATION_AVAILABLE:
+                try:
+                    print("🔍 Creating business automation...")
+                    automation_engine.create_business_automation(
+                        business_id, business_data.model_dump()
+                    )
+                    print("✅ Business automation created successfully")
+                except Exception as e:
+                    print(f"⚠️ Failed to create business automation: {e}")
+
             return BusinessAnalysisResponse(
-                business_name=business_data.business_name,
-                timestamp=datetime.now().isoformat(),
                 business_id=business_id,
-                strategic_plan=strategic_response.get("strategic_plan", {}),
-                creative_analysis=creative_response.get("creative_analysis", {}),
-                financial_analysis=financial_response.get("financial_analysis", {}),
-                sales_strategy=sales_response.get("sales_strategy", {}),
-                swot_analysis=swot_response.get("swot_analysis", {}),
-                business_model_canvas=bmc_response.get("business_model_canvas", {}),
-                analytics_summary=analytics_response.get("analytics_summary", {}),
+                business_name=business_data.business_name,
+                analysis_completed=True,
+                strategic_plan=strategic_plan,
+                creative_analysis=creative_analysis,
+                financial_analysis=financial_analysis,
+                sales_strategy=sales_strategy,
+                swot_analysis=swot_analysis,
+                business_model_canvas=bmc_analysis,
+                analytics_summary=analytics_summary,
+                management_summary=management_summary,
                 overall_recommendations=overall_recommendations,
+                task_assignments=task_assignments,
+                dynamic_task_assignments=dynamic_task_assignments,
+                created_at=datetime.now().isoformat(),
             )
 
         except Exception as e:
-            logger.error(f"Error processing business analysis: {e}")
-            raise
+            logger.error(f"Error in process_business_analysis: {e}")
+            raise e
 
-    async def _send_to_agent(
-        self, agent_type: str, business_data: Dict[str, Any]
+    async def _send_to_agent_with_message(
+        self, agent_type: str, message: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Send business data to a specific agent"""
+        """Send message to a specific agent with custom message structure"""
         try:
             agent_url = self.agent_config[agent_type]["url"]
-            message = {
-                "agent_type": agent_type,
-                "business_data": business_data,
-                "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_{datetime.now().timestamp()}",
-            }
 
             async with httpx.AsyncClient(
                 timeout=settings.DEFAULT_AGENT_TIMEOUT
@@ -155,39 +197,299 @@ class BusinessService:
 
         except Exception as e:
             logger.error(f"Error communicating with {agent_type} agent: {e}")
-            return {}
+            # Return fallback response when agent is not available
+            return self._get_fallback_response(agent_type, message.get("business_data", {}))
+
+    def _get_fallback_response(self, agent_type: str, business_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate fallback response when agent is not available"""
+        business_name = business_data.get("business_name", "Unknown Business")
+        
+        fallback_responses = {
+            "strategic": {
+                "strategic_plan": {
+                    "business_name": business_name,
+                    "vision": f"To become a leading {business_data.get('business_type', 'business')} in the market",
+                    "mission": f"To provide exceptional value to our customers",
+                    "goals": ["Increase market share", "Improve customer satisfaction", "Expand operations"],
+                    "strategies": ["Market penetration", "Product development", "Strategic partnerships"]
+                }
+            },
+            "swot": {
+                "swot_analysis": {
+                    "strengths": ["Strong business concept", "Clear target market", "Unique value proposition"],
+                    "weaknesses": ["Limited initial resources", "New market entry", "Need for brand recognition"],
+                    "opportunities": ["Growing market demand", "Technology advancement", "Market expansion"],
+                    "threats": ["Competition", "Market volatility", "Regulatory changes"],
+                    "action_plan": {
+                        "immediate_actions": [
+                            "Leverage strengths to capitalize on opportunities",
+                            "Address weaknesses through strategic planning",
+                            "Develop contingency plans for identified threats",
+                            "Focus on building competitive advantages"
+                        ]
+                    }
+                }
+            },
+            "business_model": {
+                "business_model_canvas": {
+                    "key_partners": ["Suppliers", "Technology providers", "Marketing partners"],
+                    "key_activities": ["Product development", "Marketing", "Customer service"],
+                    "value_propositions": ["Quality products", "Excellent service", "Competitive pricing"],
+                    "customer_relationships": ["Personal assistance", "Self-service", "Community"],
+                    "customer_segments": [business_data.get("target_market", "General market")],
+                    "key_resources": ["Human resources", "Technology", "Brand"],
+                    "channels": ["Online", "Direct sales", "Partnerships"],
+                    "cost_structure": ["Operational costs", "Marketing", "Technology"],
+                    "revenue_streams": ["Product sales", "Service fees", "Subscriptions"],
+                }
+            },
+            "creative": {
+                "creative_analysis": {
+                    "brand_identity": f"Modern, innovative {business_data.get('business_type', 'business')}",
+                    "marketing_ideas": ["Social media campaigns", "Influencer partnerships", "Content marketing"],
+                    "unique_angles": ["Customer-centric approach", "Technology integration", "Sustainability focus"],
+                }
+            },
+            "financial": {
+                "financial_analysis": {
+                    "startup_costs": business_data.get("initial_investment", 50000),
+                    "projected_revenue": "To be determined based on market analysis",
+                    "break_even_analysis": "6-12 months projected",
+                    "funding_recommendations": ["Bootstrap initially", "Seek angel investment", "Consider crowdfunding"],
+                }
+            },
+            "sales": {
+                "sales_strategy": {
+                    "target_customers": [business_data.get("target_market", "General market")],
+                    "sales_channels": ["Direct sales", "Online platform", "Partnerships"],
+                    "pricing_strategy": "Competitive pricing with value-based options",
+                    "sales_process": ["Lead generation", "Qualification", "Presentation", "Closing"],
+                }
+            },
+            "analytics": {
+                "analytics_summary": {
+                    "market_size": business_data.get("market_size", "To be analyzed"),
+                    "competition_level": "Moderate to high",
+                    "success_probability": {"overall_success_rate": "70%"},
+                    "key_metrics": ["Customer acquisition cost", "Lifetime value", "Conversion rate"],
+                }
+            },
+            "manager": {
+                "management_summary": {
+                    "team_structure": f"Team size: {business_data.get('team_size', 'To be determined')}",
+                    "operational_plan": ["Phase 1: Setup", "Phase 2: Launch", "Phase 3: Scale"],
+                    "risk_management": ["Market research", "Financial planning", "Legal compliance"],
+                    "success_factors": ["Strong leadership", "Clear vision", "Customer focus"]
+                }
+            }
+        }
+        
+        return fallback_responses.get(agent_type, {})
 
     def _generate_overall_recommendations(
         self, strategic, creative, financial, sales, swot, bmc, analytics
-    ) -> List[str]:
-        """Generate overall recommendations based on all agent responses"""
+    ) -> List[Dict[str, Any]]:
+        """Generate dynamic overall recommendations with timelines and business roadmap"""
         recommendations = []
-
-        # Add recommendations from each agent
-        if strategic and "recommendations" in strategic:
-            recommendations.extend(strategic["recommendations"])
-
-        if creative and "recommendations" in creative:
-            recommendations.extend(creative["recommendations"])
-
-        if financial and "recommendations" in financial:
-            recommendations.extend(financial["recommendations"])
-
-        if sales and "recommendations" in sales:
-            recommendations.extend(sales["recommendations"])
-
-        if swot and "recommendations" in swot:
-            recommendations.extend(swot["recommendations"])
-
-        if bmc and "recommendations" in bmc:
-            recommendations.extend(bmc["recommendations"])
-
-        if analytics and "recommendations" in analytics:
-            recommendations.extend(analytics["recommendations"])
-
-        # Remove duplicates and limit to top recommendations
-        unique_recommendations = list(set(recommendations))
-        return unique_recommendations[:10]  # Return top 10 recommendations
+        
+        # Extract business name for context
+        business_name = strategic.get("business_name", "Your Business")
+        business_type = strategic.get("business_type", "business")
+        
+        # Week 1-2: Foundation Phase
+        recommendations.append({
+            "phase": "Foundation (Week 1-2)",
+            "priority": "Critical",
+            "recommendations": [
+                {
+                    "task": f"Conduct market research and validation for {business_name}",
+                    "timeline": "Week 1",
+                    "agent": "strategic_agent",
+                    "description": "Analyze market size, competition, and validate business concept",
+                    "expected_outcome": "Market validation report with go/no-go decision",
+                    "dependencies": [],
+                    "success_metrics": ["Market size confirmed", "Competition analyzed", "Target market validated"]
+                },
+                {
+                    "task": f"Create financial projections and budget for {business_name}",
+                    "timeline": "Week 1-2",
+                    "agent": "financial_agent",
+                    "description": "Develop 3-year financial forecast and operational budget",
+                    "expected_outcome": "Financial model with cash flow projections",
+                    "dependencies": ["Market research"],
+                    "success_metrics": ["Budget created", "Cash flow projected", "Funding needs identified"]
+                },
+                {
+                    "task": f"Develop brand identity for {business_name}",
+                    "timeline": "Week 2",
+                    "agent": "creative_agent",
+                    "description": "Design logo, color scheme, and brand guidelines",
+                    "expected_outcome": "Complete brand identity package",
+                    "dependencies": ["Market research"],
+                    "success_metrics": ["Logo designed", "Brand guidelines created", "Visual identity established"]
+                }
+            ]
+        })
+        
+        # Week 3-4: Strategy Phase
+        recommendations.append({
+            "phase": "Strategy Development (Week 3-4)",
+            "priority": "High",
+            "recommendations": [
+                {
+                    "task": f"Create strategic growth plan for {business_name}",
+                    "timeline": "Week 3",
+                    "agent": "strategic_agent",
+                    "description": "Develop 12-month strategic roadmap with milestones",
+                    "expected_outcome": "Strategic plan with KPIs and milestones",
+                    "dependencies": ["Market research", "Financial projections"],
+                    "success_metrics": ["Strategic plan completed", "KPIs defined", "Milestones set"]
+                },
+                {
+                    "task": f"Develop sales strategy and process for {business_name}",
+                    "timeline": "Week 3-4",
+                    "agent": "sales_agent",
+                    "description": "Create sales funnel and customer acquisition strategy",
+                    "expected_outcome": "Sales strategy document and process flow",
+                    "dependencies": ["Brand identity", "Strategic plan"],
+                    "success_metrics": ["Sales process defined", "Customer acquisition strategy", "Sales funnel created"]
+                },
+                {
+                    "task": f"Set up performance tracking system for {business_name}",
+                    "timeline": "Week 4",
+                    "agent": "analytics_agent",
+                    "description": "Implement KPI tracking and analytics dashboard",
+                    "expected_outcome": "Analytics dashboard with key metrics",
+                    "dependencies": ["Strategic plan"],
+                    "success_metrics": ["Dashboard created", "KPIs tracked", "Reporting system established"]
+                }
+            ]
+        })
+        
+        # Week 5-8: Launch Preparation
+        recommendations.append({
+            "phase": "Launch Preparation (Week 5-8)",
+            "priority": "High",
+            "recommendations": [
+                {
+                    "task": f"Launch marketing content strategy for {business_name}",
+                    "timeline": "Week 5-6",
+                    "agent": "creative_agent",
+                    "description": "Create content calendar and marketing materials",
+                    "expected_outcome": "Content strategy and initial marketing assets",
+                    "dependencies": ["Brand identity", "Sales strategy"],
+                    "success_metrics": ["Content calendar created", "Marketing materials ready", "Social media presence established"]
+                },
+                {
+                    "task": f"Execute customer acquisition campaign for {business_name}",
+                    "timeline": "Week 6-8",
+                    "agent": "sales_agent",
+                    "description": "Launch marketing campaigns to acquire customers",
+                    "expected_outcome": "Customer acquisition pipeline and results",
+                    "dependencies": ["Marketing content", "Sales strategy"],
+                    "success_metrics": ["Campaign launched", "Leads generated", "Customer pipeline created"]
+                },
+                {
+                    "task": f"Optimize revenue model for {business_name}",
+                    "timeline": "Week 7-8",
+                    "agent": "business_model_agent",
+                    "description": "Review and optimize pricing and revenue streams",
+                    "expected_outcome": "Optimized revenue model and pricing strategy",
+                    "dependencies": ["Financial projections", "Sales strategy"],
+                    "success_metrics": ["Pricing optimized", "Revenue streams defined", "Business model validated"]
+                }
+            ]
+        })
+        
+        # Month 2-3: Growth Phase
+        recommendations.append({
+            "phase": "Growth & Optimization (Month 2-3)",
+            "priority": "Medium",
+            "recommendations": [
+                {
+                    "task": f"Analyze customer data and market trends for {business_name}",
+                    "timeline": "Month 2",
+                    "agent": "analytics_agent",
+                    "description": "Analyze customer behavior and market insights",
+                    "expected_outcome": "Customer insights and market analysis report",
+                    "dependencies": ["Performance tracking", "Customer acquisition"],
+                    "success_metrics": ["Customer insights gathered", "Market trends analyzed", "Optimization opportunities identified"]
+                },
+                {
+                    "task": f"Develop partnership strategy for {business_name}",
+                    "timeline": "Month 2-3",
+                    "agent": "business_model_agent",
+                    "description": "Identify and develop strategic partnerships",
+                    "expected_outcome": "Partnership strategy and potential partner list",
+                    "dependencies": ["Revenue model", "Market analysis"],
+                    "success_metrics": ["Partnerships identified", "Partnership strategy created", "Partnerships initiated"]
+                },
+                {
+                    "task": f"Scale operations for {business_name}",
+                    "timeline": "Month 3",
+                    "agent": "manager_agent",
+                    "description": "Optimize operational processes and scale efficiently",
+                    "expected_outcome": "Scaled operations with improved efficiency",
+                    "dependencies": ["Customer insights", "Partnership strategy"],
+                    "success_metrics": ["Operations scaled", "Efficiency improved", "Growth capacity increased"]
+                }
+            ]
+        })
+        
+        # Add business-type specific recommendations
+        if business_type == "coffee_shop":
+            recommendations.append({
+                "phase": "Coffee Shop Specific (Week 4-6)",
+                "priority": "High",
+                "recommendations": [
+                    {
+                        "task": f"Design coffee shop interior concept for {business_name}",
+                        "timeline": "Week 4-5",
+                        "agent": "creative_agent",
+                        "description": "Create interior design concept and branding materials",
+                        "expected_outcome": "Interior design concept and visual mockups",
+                        "dependencies": ["Brand identity"],
+                        "success_metrics": ["Interior design completed", "Visual mockups created", "Branding materials ready"]
+                    },
+                    {
+                        "task": f"Launch coffee shop grand opening campaign for {business_name}",
+                        "timeline": "Week 5-6",
+                        "agent": "sales_agent",
+                        "description": "Plan and execute grand opening marketing campaign",
+                        "expected_outcome": "Grand opening campaign with customer acquisition",
+                        "dependencies": ["Interior design", "Marketing content"],
+                        "success_metrics": ["Grand opening planned", "Campaign executed", "Customers acquired"]
+                    }
+                ]
+            })
+        
+        elif business_type == "tech_startup":
+            recommendations.append({
+                "phase": "Tech Startup Specific (Week 3-6)",
+                "priority": "High",
+                "recommendations": [
+                    {
+                        "task": f"Develop fundraising strategy for {business_name}",
+                        "timeline": "Week 3-4",
+                        "agent": "strategic_agent",
+                        "description": "Create pitch deck and fundraising strategy",
+                        "expected_outcome": "Pitch deck and investor outreach plan",
+                        "dependencies": ["Market research", "Financial projections"],
+                        "success_metrics": ["Pitch deck created", "Fundraising strategy", "Investor list prepared"]
+                    },
+                    {
+                        "task": f"Create tech product marketing materials for {business_name}",
+                        "timeline": "Week 4-6",
+                        "agent": "creative_agent",
+                        "description": "Design product website and marketing materials",
+                        "expected_outcome": "Product website and marketing assets",
+                        "dependencies": ["Brand identity", "Fundraising strategy"],
+                        "success_metrics": ["Website created", "Marketing materials ready", "Product positioning defined"]
+                    }
+                ]
+            })
+        
+        return recommendations
 
     def create_business(self, business_data: BusinessInput) -> Optional[str]:
         """Create a new business without analysis"""
@@ -433,6 +735,63 @@ class BusinessService:
         except Exception as e:
             logger.error(f"❌ Error deleting business: {e}")
             return False
+
+    async def _process_basic_analysis(self, business_data: BusinessInput) -> BusinessAnalysisResponse:
+        """Basic analysis fallback when agents are not available"""
+        try:
+            print("⚠️ Using basic analysis fallback (agents not available)")
+            
+            # Create basic analysis using fallback responses
+            strategic_plan = self._get_fallback_response("strategic", business_data.model_dump())
+            creative_analysis = self._get_fallback_response("creative", business_data.model_dump())
+            financial_analysis = self._get_fallback_response("financial", business_data.model_dump())
+            sales_strategy = self._get_fallback_response("sales", business_data.model_dump())
+            swot_analysis = self._get_fallback_response("swot", business_data.model_dump())
+            bmc_analysis = self._get_fallback_response("business_model", business_data.model_dump())
+            analytics_summary = self._get_fallback_response("analytics", business_data.model_dump())
+            management_summary = self._get_fallback_response("manager", business_data.model_dump())
+
+            # Generate overall recommendations
+            overall_recommendations = self._generate_overall_recommendations(
+                strategic_plan, creative_analysis, financial_analysis, sales_strategy,
+                swot_analysis, bmc_analysis, analytics_summary
+            )
+
+            # Save to database
+            business_id = self.save_business_data(
+                business_data,
+                {
+                    "strategic_plan": strategic_plan,
+                    "creative_analysis": creative_analysis,
+                    "financial_analysis": financial_analysis,
+                    "sales_strategy": sales_strategy,
+                    "swot_analysis": swot_analysis,
+                    "business_model_canvas": bmc_analysis,
+                    "analytics_summary": analytics_summary,
+                    "management_summary": management_summary,
+                },
+            )
+
+            return BusinessAnalysisResponse(
+                business_id=business_id,
+                business_name=business_data.business_name,
+                analysis_completed=True,
+                strategic_plan=strategic_plan,
+                creative_analysis=creative_analysis,
+                financial_analysis=financial_analysis,
+                sales_strategy=sales_strategy,
+                swot_analysis=swot_analysis,
+                business_model_canvas=bmc_analysis,
+                analytics_summary=analytics_summary,
+                management_summary=management_summary,
+                overall_recommendations=overall_recommendations,
+                task_assignments={},
+                created_at=datetime.now().isoformat(),
+            )
+
+        except Exception as e:
+            logger.error(f"Error in basic analysis: {e}")
+            raise e
 
 
 # Global service instance

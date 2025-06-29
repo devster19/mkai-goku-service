@@ -48,8 +48,8 @@ class BusinessAnalysisResponse(BaseModel):
     """Business analysis response model"""
 
     business_name: str
-    timestamp: str
     business_id: Optional[str] = None
+    analysis_completed: bool = True
     strategic_plan: Dict[str, Any]
     creative_analysis: Dict[str, Any]
     financial_analysis: Dict[str, Any]
@@ -57,7 +57,11 @@ class BusinessAnalysisResponse(BaseModel):
     swot_analysis: Dict[str, Any]
     business_model_canvas: Dict[str, Any]
     analytics_summary: Dict[str, Any]
-    overall_recommendations: List[str]
+    management_summary: Optional[Dict[str, Any]] = None
+    overall_recommendations: List[Dict[str, Any]]
+    task_assignments: Optional[Dict[str, Any]] = None
+    dynamic_task_assignments: Optional[Dict[str, Any]] = None
+    created_at: str
 
 
 class BusinessResponse(BaseModel):

@@ -15,7 +15,7 @@ from datetime import datetime
 
 # Import database module
 try:
-    from database import db
+    from app.api.v0.database import db
 
     DATABASE_AVAILABLE = True
 except ImportError:
@@ -24,7 +24,7 @@ except ImportError:
 
 # Import task automation system
 try:
-    from task_automation import automation_engine
+    from app.api.v0.task_automation import automation_engine
 
     AUTOMATION_AVAILABLE = True
     print("✅ Task automation module loaded successfully.")
@@ -807,7 +807,7 @@ async def execute_specific_task(business_id: str, task_type: str, agent_type: st
             raise HTTPException(status_code=404, detail="Task not found")
 
         # Create AutomatedTask object
-        from task_automation import AutomatedTask, TaskFrequency
+        from app.api.v0.task_automation import AutomatedTask, TaskFrequency
 
         task = AutomatedTask(
             business_id=task_data["business_id"],
