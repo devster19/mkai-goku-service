@@ -21,8 +21,8 @@ jobs:
       - name: Install dependencies to temporary folder
         run: |
           mkdir -p build
-          pip install -r mkai-goku-service/requirements.txt -t build
-          cp -r mkai-goku-service/app/* build/
+          pip install -r requirements.txt -t build
+          cp -r app/* build/
 
       - name: Zip deployment package
         run: |
