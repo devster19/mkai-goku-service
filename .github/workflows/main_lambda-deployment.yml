@@ -24,8 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Zip Lambda function
-        run: zip -r ../../lambda_function.zip .
-        working-directory: mkai-goku-service/app
+        run: zip -r lambda_function.zip mkai-goku-service/app
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
