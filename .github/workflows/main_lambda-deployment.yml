@@ -13,16 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      - name: Install dependencies to temporary folder
+      - name: Install dependencies & build Lambda package inside Amazon Linux (Lambda-compatible)
         run: |
-          docker run --rm -v "$PWD":/var/task -w /var/task public.ecr.aws/lambda/python:3.9 \
+          docker run --rm -v "$PWD":/var/task -w /var/task amazonlinux:2 \
             /bin/bash -c "
-              pip install -r mkai-goku-service/requirements.txt -t build && \
+              yum install -y python39 python3-pip zip && \
+              python3.9 -m pip install --upgrade pip && \
+              python3.9 -m pip install -r mkai-goku-service/requirements.txt -t build && \
               cp -r mkai-goku-service/app/* build/ && \
               cd build && \
               zip -r ../lambda_function.zip .
@@ -38,6 +35,5 @@ jobs:
       - name: Deploy to AWS Lambda
         run: |
           aws lambda update-function-code \
-            --function-name arn:aws:lambda:ap-southeast-2:712137513056:function:mkai-goku-service \
+            --function-name mkai-goku-service \
             --zip-file fileb://lambda_function.zip
-
