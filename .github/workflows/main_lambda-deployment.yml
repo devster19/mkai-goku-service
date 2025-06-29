@@ -18,8 +18,8 @@ jobs:
           docker run --rm -v "$PWD":/var/task -w /var/task amazonlinux:2 \
             /bin/bash -c "
               yum install -y python39 python3-pip zip && \
-              python3.9 -m pip install --upgrade pip && \
-              python3.9 -m pip install -r mkai-goku-service/requirements.txt -t build && \
+              python3 -m pip install --upgrade pip && \
+              python3 -m pip install -r mkai-goku-service/requirements.txt -t build && \
               cp -r mkai-goku-service/app/* build/ && \
               cd build && \
               zip -r ../lambda_function.zip .
