@@ -13,17 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies & build Lambda package inside Amazon Linux (Lambda-compatible)
+      - name: Build Lambda package in Amazon Linux Docker
         run: |
-          docker run --rm -v "$PWD":/var/task -w /var/task/mkai-goku-service amazonlinux:2 \
+          docker run --rm -v "$PWD/mkai-goku-service":/app -w /app amazonlinux:2 \
             /bin/bash -c "
               yum install -y python3 python3-pip zip && \
               python3 -m pip install --upgrade pip && \
-              python3 -m pip install -r requirements.txt -t /var/task/build && \
-              cp -r app/* /var/task/build/ && \
-              cd /var/task/build && \
-              zip -r /var/task/lambda_function.zip .
+              python3 -m pip install -r requirements.txt -t /app/build && \
+              cp -r app/* /app/build/ && \
+              cd /app/build && \
+              zip -r /app/lambda_function.zip .
             "
+
 
 
       - name: Configure AWS credentials
