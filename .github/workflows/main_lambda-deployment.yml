@@ -18,13 +18,17 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install dependencies into app folder
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r mkai-goku-service/requirements.txt -t mkai-goku-service/app
 
-      - name: Zip Lambda function
-        run: zip -r lambda_function.zip mkai-goku-service/app
+      - name: List files for debug
+        run: ls -lR mkai-goku-service/app
+        
+      - name: Zip Lambda function (contents of app/)
+        run: |
+          cd mkai-goku-service/app
+          zip -r ../../lambda_function.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
