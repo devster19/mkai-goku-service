@@ -48,7 +48,7 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
     prompt = f"""
     As a strategic business consultant, analyze the following business and provide a comprehensive strategic plan:
 
-    Business Information:
+    BUSINESS INFORMATION:
     - Name: {business_name}
     - Type: {business_type}
     - Location: {location}
@@ -63,44 +63,37 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
     - Competitors: {', '.join(competitors)}
     - Growth Goals: {', '.join(growth_goals)}
 
-    Please provide a comprehensive strategic analysis specifically tailored for this {business_type} business, including:
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    1. Market Analysis:
-       - Target market assessment
-       - Market size and growth potential
-       - Market trends and opportunities
+    MARKET ANALYSIS:
+    [Provide 4-6 key market insights including target market assessment, market size, and growth potential]
 
-    2. Competitive Positioning:
-       - Unique value proposition analysis
-       - Competitive advantages
-       - Differentiation strategy
+    COMPETITIVE POSITIONING:
+    [Analyze 4-6 competitive advantages and differentiation strategies for this business]
 
-    3. Growth Strategy:
-       - Short-term goals (0-12 months)
-       - Medium-term goals (1-3 years)
-       - Long-term goals (3-5 years)
+    GROWTH STRATEGY:
+    [Outline 3-4 short-term (0-12 months), medium-term (1-3 years), and long-term (3-5 years) goals]
 
-    4. Risk Assessment:
-       - Market risks
-       - Operational risks
-       - Mitigation strategies
+    RISK ASSESSMENT:
+    [Identify 4-6 key market and operational risks with mitigation strategies]
 
-    5. Key Performance Indicators (KPIs):
-       - Revenue metrics
-       - Customer metrics
-       - Operational metrics
+    KEY PERFORMANCE INDICATORS:
+    [Define 5-7 important KPIs for revenue, customer, and operational metrics]
 
-    6. Implementation Timeline:
-       - Phase 1 (0-6 months)
-       - Phase 2 (6-12 months)
-       - Phase 3 (12-24 months)
+    IMPLEMENTATION TIMELINE:
+    [Provide 3-4 key activities for each phase: Phase 1 (0-6 months), Phase 2 (6-12 months), Phase 3 (12-24 months)]
 
-    7. Resource Requirements:
-       - Financial requirements
-       - Human resources
-       - Technology needs
+    RESOURCE REQUIREMENTS:
+    [List 4-6 financial, human resource, and technology requirements]
 
-    Focus on providing specific, actionable recommendations that are relevant to this particular business type and industry.
+    STRATEGIC RECOMMENDATIONS:
+    [Provide 6-8 actionable strategic recommendations with timing and priority:
+    - Recommendation: [specific strategic action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Focus on providing specific, actionable recommendations that are highly relevant to this {business_type} business in the {industry} industry.
     """
 
     try:
@@ -111,17 +104,54 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
                 messages=[
                     {
                         "role": "system",
-                        "content": f"You are an expert strategic business consultant with deep knowledge of {industry} industry, market analysis, competitive positioning, and business growth strategies. Provide specific, actionable advice tailored to {business_type} businesses.",
+                        "content": f"You are an expert strategic business consultant with deep knowledge of {industry} industry, market analysis, competitive positioning, and business growth strategies. You provide specific, actionable advice tailored to {business_type} businesses. Always respond in the exact format requested with clear sections and strategic insights.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=2000,
+                max_tokens=2500,
                 temperature=0.7,
             )
 
             strategic_analysis = response.choices[0].message.content
         else:
             strategic_analysis = f"Strategic analysis for {business_name} - {business_type} business in {location}"
+
+        # Parse the AI response to extract structured data
+        sections = strategic_analysis.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'RECOMMENDATIONS' in title or 'ACTION_PLAN' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:') or line.startswith('- Action:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
 
         # Create strategic plan structure
         strategic_plan = {
@@ -131,24 +161,24 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
             "market_analysis": {
                 "target_market": target_market,
                 "market_size": market_size or "To be determined",
-                "market_trends": f"Industry-specific trends for {industry}",
+                "market_trends": parsed_data.get("MARKET_ANALYSIS", [f"Industry-specific trends for {industry}"]),
                 "analysis_text": strategic_analysis,
             },
             "competitive_positioning": {
                 "unique_value_proposition": unique_value_proposition or f"Quality {business_type} services",
-                "competitive_advantages": [
+                "competitive_advantages": parsed_data.get("COMPETITIVE_POSITIONING", [
                     f"Specialized {business_type} expertise",
                     f"Strong market positioning in {location}",
                     "Customer-focused approach",
-                ],
+                ]),
                 "differentiation_strategy": f"Focus on {business_type} excellence and customer experience",
             },
             "growth_strategy": {
-                "short_term_goals": growth_goals or [
+                "short_term_goals": parsed_data.get("GROWTH_STRATEGY", growth_goals or [
                     f"Establish {business_type} market presence",
                     "Build customer base",
                     "Develop operational processes",
-                ],
+                ]),
                 "medium_term_goals": [
                     f"Expand {business_type} operations",
                     "Develop online presence",
@@ -161,11 +191,11 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
                 ],
             },
             "risk_assessment": {
-                "market_risks": [
+                "market_risks": parsed_data.get("RISK_ASSESSMENT", [
                     "Economic downturn affecting customer spending",
                     "New competitors entering the market",
                     f"Industry-specific regulatory changes",
-                ],
+                ]),
                 "operational_risks": [
                     "Supply chain disruptions",
                     "Staff turnover and training",
@@ -178,26 +208,50 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
                     "Implement robust technology systems",
                 ],
             },
-            "kpis": [
+            "kpis": parsed_data.get("KEY_PERFORMANCE_INDICATORS", [
                 "Monthly revenue growth",
                 "Customer acquisition cost",
                 "Customer lifetime value",
                 "Customer satisfaction score",
                 f"{business_type} specific metrics",
-            ],
+            ]),
             "implementation_timeline": {
-                "phase_1": ["Market research and validation", "Business setup and licensing", "Initial team hiring"],
+                "phase_1": parsed_data.get("IMPLEMENTATION_TIMELINE", ["Market research and validation", "Business setup and licensing", "Initial team hiring"]),
                 "phase_2": ["Launch operations", "Marketing campaigns", "Customer acquisition"],
                 "phase_3": ["Scale operations", "Process optimization", "Market expansion"],
             },
-            "key_recommendations": [
-                "Focus on market research and customer validation",
-                "Develop a clear competitive advantage",
-                "Build strong partnerships and alliances",
-                "Invest in technology and innovation",
-                "Create a strong brand identity",
-                "Implement data-driven decision making",
-            ],
+            "resource_requirements": parsed_data.get("RESOURCE_REQUIREMENTS", [
+                "Initial capital investment",
+                "Skilled workforce",
+                "Technology infrastructure",
+                "Marketing budget"
+            ]),
+            "key_recommendations": parsed_data.get("STRATEGIC_RECOMMENDATIONS", [
+                {
+                    "action": "Focus on market research and customer validation",
+                    "timing": "this week",
+                    "priority": "High",
+                    "impact": "Validate business concept and market demand"
+                },
+                {
+                    "action": "Develop a clear competitive advantage",
+                    "timing": "next week",
+                    "priority": "High", 
+                    "impact": "Differentiate from competitors and establish market position"
+                },
+                {
+                    "action": "Build strong partnerships and alliances",
+                    "timing": "this month",
+                    "priority": "Medium",
+                    "impact": "Expand market reach and reduce operational risks"
+                },
+                {
+                    "action": "Invest in technology and innovation",
+                    "timing": "next month",
+                    "priority": "Medium",
+                    "impact": "Improve operational efficiency and customer experience"
+                }
+            ]),
         }
 
         return {"strategic_plan": strategic_plan}
@@ -217,7 +271,8 @@ async def analyze_strategic(business_data: Dict[str, Any], context: Dict[str, An
                     "Develop a clear competitive advantage",
                     "Build strong partnerships and alliances",
                     "Invest in technology and innovation"
-                ]
+                ],
+                "analysis_text": f"Strategic analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})"
             }
         }
 
@@ -237,25 +292,42 @@ async def analyze_swot(business_data: Dict[str, Any], strategic_plan: Dict[str, 
     prompt = f"""
     As a business analyst, conduct a comprehensive SWOT analysis for the following business:
 
-    Business: {business_name}
-    Type: {business_type}
-    Location: {location}
-    Target Market: {target_market}
-    Competitors: {', '.join(competitors)}
-    Unique Value Proposition: {unique_value_proposition}
-    Initial Investment: {f"${initial_investment:,.0f}" if initial_investment else "Not specified"}
-    Team Size: {f"{team_size} employees" if team_size else "Not specified"}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Location: {location}
+    - Target Market: {target_market}
+    - Competitors: {', '.join(competitors)}
+    - Unique Value Proposition: {unique_value_proposition}
+    - Initial Investment: {f"${initial_investment:,.0f}" if initial_investment else "Not specified"}
+    - Team Size: {f"{team_size} employees" if team_size else "Not specified"}
+    - Strategic Vision: {strategic_plan.get('vision', 'Not available') if strategic_plan else 'Not available'}
 
-    Strategic Context: {strategic_plan.get('vision', '') if strategic_plan else 'Not available'}
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    Please provide a detailed SWOT analysis with:
-    1. Strengths (internal positive factors)
-    2. Weaknesses (internal negative factors)
-    3. Opportunities (external positive factors)
-    4. Threats (external negative factors)
-    5. Action plan based on the analysis
+    STRENGTHS:
+    [List 5-7 internal positive factors that give this business competitive advantages]
 
-    Focus on specific, actionable insights for this {business_type} business.
+    WEAKNESSES:
+    [Identify 4-6 internal negative factors that need to be addressed or improved]
+
+    OPPORTUNITIES:
+    [List 5-7 external positive factors that this business can capitalize on]
+
+    THREATS:
+    [Identify 4-6 external negative factors that could impact this business]
+
+    STRATEGIC INSIGHTS:
+    [Provide 3-4 key strategic insights based on the SWOT analysis]
+
+    ACTION PLAN:
+    [Outline 6-8 specific actions with timing and priority to leverage strengths, address weaknesses, capitalize on opportunities, and mitigate threats:
+    - Action: [specific action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Focus on providing specific, actionable insights that are highly relevant to this {business_type} business and its market position.
     """
 
     try:
@@ -265,11 +337,11 @@ async def analyze_swot(business_data: Dict[str, Any], strategic_plan: Dict[str, 
                 messages=[
                     {
                         "role": "system",
-                        "content": f"You are an expert business analyst specializing in SWOT analysis for {business_type} businesses. Provide detailed, actionable insights.",
+                        "content": f"You are an expert business analyst specializing in SWOT analysis for {business_type} businesses. You provide detailed, actionable insights and strategic recommendations. Always respond in the exact format requested with clear sections and specific analysis.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=1500,
+                max_tokens=2000,
                 temperature=0.7,
             )
 
@@ -277,39 +349,101 @@ async def analyze_swot(business_data: Dict[str, Any], strategic_plan: Dict[str, 
         else:
             swot_analysis_text = f"SWOT analysis for {business_name} - {business_type} business"
 
+        # Parse the AI response to extract structured data
+        sections = swot_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for action plan with timing and priority
+                if 'ACTION_PLAN' in title:
+                    actions = []
+                    lines = content.strip().split('\n')
+                    current_action = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Action:'):
+                            if current_action:
+                                actions.append(current_action)
+                            current_action = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_action['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_action['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_action['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_action:
+                        actions.append(current_action)
+                    
+                    parsed_data[title] = actions
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
+
         return {
             "swot_analysis": {
-                "strengths": [
+                "strengths": parsed_data.get("STRENGTHS", [
                     "Strong business concept",
                     "Clear target market",
                     "Unique value proposition",
                     f"Specialized {business_type} expertise",
-                ],
-                "weaknesses": [
+                ]),
+                "weaknesses": parsed_data.get("WEAKNESSES", [
                     "Limited initial resources",
                     "New market entry",
                     "Need for brand recognition",
                     "Limited operational experience",
-                ],
-                "opportunities": [
+                ]),
+                "opportunities": parsed_data.get("OPPORTUNITIES", [
                     "Growing market demand",
                     "Technology advancement",
                     "Market expansion potential",
                     "Online presence opportunities",
-                ],
-                "threats": [
+                ]),
+                "threats": parsed_data.get("THREATS", [
                     "Competition from established players",
                     "Market volatility",
                     "Regulatory changes",
                     "Economic uncertainty",
-                ],
+                ]),
+                "strategic_insights": parsed_data.get("STRATEGIC_INSIGHTS", [
+                    "Leverage unique value proposition to differentiate from competitors",
+                    "Focus on building strong customer relationships",
+                    "Invest in technology to improve operational efficiency"
+                ]),
                 "action_plan": {
-                    "immediate_actions": [
-                        "Leverage strengths to capitalize on opportunities",
-                        "Address weaknesses through strategic planning",
-                        "Develop contingency plans for identified threats",
-                        "Focus on building competitive advantages",
-                    ],
+                    "immediate_actions": parsed_data.get("ACTION_PLAN", [
+                        {
+                            "action": "Leverage strengths to capitalize on opportunities",
+                            "timing": "this week",
+                            "priority": "High",
+                            "impact": "Maximize competitive advantages and market opportunities"
+                        },
+                        {
+                            "action": "Address weaknesses through strategic planning",
+                            "timing": "next week",
+                            "priority": "High",
+                            "impact": "Improve business capabilities and reduce vulnerabilities"
+                        },
+                        {
+                            "action": "Develop contingency plans for identified threats",
+                            "timing": "this month",
+                            "priority": "Medium",
+                            "impact": "Prepare for potential risks and market changes"
+                        },
+                        {
+                            "action": "Focus on building competitive advantages",
+                            "timing": "next month",
+                            "priority": "Medium",
+                            "impact": "Strengthen market position and differentiation"
+                        },
+                    ]),
                     "analysis_text": swot_analysis_text,
                 }
             }
@@ -323,6 +457,10 @@ async def analyze_swot(business_data: Dict[str, Any], strategic_plan: Dict[str, 
                 "weaknesses": ["Limited initial resources", "New market entry", "Need for brand recognition"],
                 "opportunities": ["Growing market demand", "Technology advancement", "Market expansion"],
                 "threats": ["Competition", "Market volatility", "Regulatory changes"],
+                "strategic_insights": [
+                    "Leverage unique value proposition to differentiate from competitors",
+                    "Focus on building strong customer relationships"
+                ],
                 "action_plan": {
                     "immediate_actions": [
                         "Leverage strengths to capitalize on opportunities",
@@ -330,7 +468,8 @@ async def analyze_swot(business_data: Dict[str, Any], strategic_plan: Dict[str, 
                         "Develop contingency plans for identified threats",
                         "Focus on building competitive advantages",
                     ]
-                }
+                },
+                "analysis_text": f"SWOT analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})"
             }
         }
 
@@ -347,63 +486,156 @@ async def analyze_business_model(business_data: Dict[str, Any], strategic_plan: 
     prompt = f"""
     Create a comprehensive Business Model Canvas for:
 
-    Business: {business_name}
-    Type: {business_type}
-    Target Market: {target_market}
-    Business Model: {business_model}
-    Value Proposition: {unique_value_proposition}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Target Market: {target_market}
+    - Business Model: {business_model}
+    - Value Proposition: {unique_value_proposition}
+    - Strategic Vision: {strategic_plan.get('vision', 'Not available') if strategic_plan else 'Not available'}
+    - SWOT Strengths: {swot_analysis.get('strengths', []) if swot_analysis else 'Not available'}
 
-    Strategic Context: {strategic_plan.get('vision', '') if strategic_plan else 'Not available'}
-    SWOT Analysis: {swot_analysis.get('strengths', []) if swot_analysis else 'Not available'}
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    Please provide a detailed Business Model Canvas with all 9 building blocks:
-    1. Key Partners
-    2. Key Activities
-    3. Value Propositions
-    4. Customer Relationships
-    5. Customer Segments
-    6. Key Resources
-    7. Channels
-    8. Cost Structure
-    9. Revenue Streams
+    KEY PARTNERS:
+    [List 4-6 key partners, suppliers, and strategic alliances for this business]
 
-    Also include key insights and recommendations based on the business model.
+    KEY ACTIVITIES:
+    [Outline 5-7 core activities and processes essential for this business model]
+
+    VALUE PROPOSITIONS:
+    [Define 4-6 unique value propositions that solve customer problems and create value]
+
+    CUSTOMER RELATIONSHIPS:
+    [Describe 3-5 types of customer relationships and engagement strategies]
+
+    CUSTOMER SEGMENTS:
+    [Identify 3-5 distinct customer segments with specific characteristics and needs]
+
+    KEY RESOURCES:
+    [List 4-6 critical resources (human, physical, intellectual, financial) needed]
+
+    CHANNELS:
+    [Outline 4-6 distribution and communication channels to reach customers]
+
+    COST STRUCTURE:
+    [Break down 4-6 major cost categories and cost drivers for this business]
+
+    REVENUE STREAMS:
+    [Define 4-6 revenue sources and pricing mechanisms for this business model]
+
+    BUSINESS MODEL INSIGHTS:
+    [Provide 3-4 key insights about the business model's viability and optimization opportunities]
+
+    RECOMMENDATIONS:
+    [Suggest 5-7 specific actions to optimize and improve the business model with timing and priority:
+    - Recommendation: [specific business model action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Focus on creating a comprehensive, actionable Business Model Canvas that is specifically tailored to this {business_type} business and its market context.
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"You are an expert in Business Model Canvas creation for {business_type} businesses. Provide comprehensive, actionable business model insights.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=1500,
-            temperature=0.7,
-        )
+        if OPENAI_AVAILABLE:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are an expert in Business Model Canvas creation for {business_type} businesses. You provide comprehensive, actionable business model insights and strategic recommendations. Always respond in the exact format requested with clear sections and specific business model elements.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=2500,
+                temperature=0.7,
+            )
 
-        bmc_analysis_text = response.choices[0].message.content
+            bmc_analysis_text = response.choices[0].message.content
+        else:
+            bmc_analysis_text = f"Business Model Canvas analysis for {business_name} - {business_type} business"
+
+        # Parse the AI response to extract structured data
+        sections = bmc_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'RECOMMENDATIONS' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
 
         return {
             "business_model_canvas": {
-                "key_partners": ["Suppliers", "Technology providers", "Marketing partners", "Service providers"],
-                "key_activities": ["Product development", "Marketing", "Customer service", "Operations management"],
-                "value_propositions": ["Quality products", "Excellent service", "Competitive pricing", unique_value_proposition or f"Superior {business_type} experience"],
-                "customer_relationships": ["Personal assistance", "Self-service", "Community", "Co-creation"],
-                "customer_segments": [target_market or "General market"],
-                "key_resources": ["Human resources", "Technology", "Brand", "Intellectual property"],
-                "channels": ["Online", "Direct sales", "Partnerships", "Social media"],
-                "cost_structure": ["Operational costs", "Marketing", "Technology", "Human resources"],
-                "revenue_streams": ["Product sales", "Service fees", "Subscriptions", "Consulting"],
+                "key_partners": parsed_data.get("KEY_PARTNERS", ["Suppliers", "Technology providers", "Marketing partners", "Service providers"]),
+                "key_activities": parsed_data.get("KEY_ACTIVITIES", ["Product development", "Marketing", "Customer service", "Operations management"]),
+                "value_propositions": parsed_data.get("VALUE_PROPOSITIONS", ["Quality products", "Excellent service", "Competitive pricing", unique_value_proposition or f"Superior {business_type} experience"]),
+                "customer_relationships": parsed_data.get("CUSTOMER_RELATIONSHIPS", ["Personal assistance", "Self-service", "Community", "Co-creation"]),
+                "customer_segments": parsed_data.get("CUSTOMER_SEGMENTS", [target_market or "General market"]),
+                "key_resources": parsed_data.get("KEY_RESOURCES", ["Human resources", "Technology", "Brand", "Intellectual property"]),
+                "channels": parsed_data.get("CHANNELS", ["Online", "Direct sales", "Partnerships", "Social media"]),
+                "cost_structure": parsed_data.get("COST_STRUCTURE", ["Operational costs", "Marketing", "Technology", "Human resources"]),
+                "revenue_streams": parsed_data.get("REVENUE_STREAMS", ["Product sales", "Service fees", "Subscriptions", "Consulting"]),
+                "business_model_insights": parsed_data.get("BUSINESS_MODEL_INSIGHTS", [
+                    "Strong value proposition with clear customer benefits",
+                    "Multiple revenue streams provide stability",
+                    "Key partnerships reduce operational risks"
+                ]),
                 "key_insights": {
-                    "recommendations": [
-                        "Optimize revenue streams and pricing strategy",
-                        "Strengthen key partnerships and relationships",
-                        "Focus on customer acquisition and retention",
-                        "Streamline operations to reduce costs",
-                    ],
+                    "recommendations": parsed_data.get("RECOMMENDATIONS", [
+                        {
+                            "action": "Optimize revenue streams and pricing strategy",
+                            "timing": "this week",
+                            "priority": "High",
+                            "impact": "Improve profitability and market competitiveness"
+                        },
+                        {
+                            "action": "Strengthen key partnerships and relationships",
+                            "timing": "next week",
+                            "priority": "High",
+                            "impact": "Expand market reach and reduce operational risks"
+                        },
+                        {
+                            "action": "Focus on customer acquisition and retention",
+                            "timing": "this month",
+                            "priority": "Medium",
+                            "impact": "Build sustainable customer base and revenue growth"
+                        },
+                        {
+                            "action": "Streamline operations to reduce costs",
+                            "timing": "next month",
+                            "priority": "Medium",
+                            "impact": "Improve operational efficiency and profit margins"
+                        },
+                    ]),
                     "analysis_text": bmc_analysis_text,
                 }
             }
@@ -422,13 +654,18 @@ async def analyze_business_model(business_data: Dict[str, Any], strategic_plan: 
                 "channels": ["Online", "Direct sales", "Partnerships"],
                 "cost_structure": ["Operational costs", "Marketing", "Technology"],
                 "revenue_streams": ["Product sales", "Service fees", "Subscriptions"],
+                "business_model_insights": [
+                    "Strong value proposition with clear customer benefits",
+                    "Multiple revenue streams provide stability"
+                ],
                 "key_insights": {
                     "recommendations": [
                         "Optimize revenue streams and pricing strategy",
                         "Strengthen key partnerships and relationships",
                         "Focus on customer acquisition and retention",
                         "Streamline operations to reduce costs",
-                    ]
+                    ],
+                    "analysis_text": f"Business Model Canvas analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})"
                 }
             }
         }
@@ -443,83 +680,148 @@ async def analyze_creative(business_data: Dict[str, Any], strategic_plan: Dict[s
     unique_value_proposition = business_data.get("unique_value_proposition", "")
 
     prompt = f"""
-    As a creative marketing expert, provide creative analysis and recommendations for:
+    As a creative marketing expert, analyze and provide recommendations for:
 
-    Business: {business_name}
-    Type: {business_type}
-    Target Market: {target_market}
-    Value Proposition: {unique_value_proposition}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Target Market: {target_market}
+    - Value Proposition: {unique_value_proposition}
+    - Strategic Vision: {strategic_plan.get('vision', 'Not available') if strategic_plan else 'Not available'}
 
-    Strategic Context: {strategic_plan.get('vision', '') if strategic_plan else 'Not available'}
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    Please provide:
-    1. Brand identity recommendations
-    2. Creative marketing ideas
-    3. Unique angles and positioning
-    4. Content strategy suggestions
-    5. Visual identity concepts
-    6. Marketing campaign ideas
+    BRAND IDENTITY:
+    [Provide 3-5 specific brand identity recommendations tailored to this business]
 
-    Focus on creative, innovative approaches that will help this {business_type} stand out in the market.
+    MARKETING IDEAS:
+    [List 5-7 creative marketing ideas specific to this business type and target market]
+
+    UNIQUE ANGLES:
+    [Provide 4-6 unique positioning angles that will help this business stand out]
+
+    CONTENT STRATEGY:
+    [Suggest 5-7 content types and strategies relevant to this business]
+
+    VISUAL CONCEPTS:
+    [Recommend 4-6 visual identity concepts including colors, styles, and design elements]
+
+    CAMPAIGN IDEAS:
+    [Propose 4-6 specific marketing campaign ideas with brief descriptions]
+
+    KEY RECOMMENDATIONS:
+    [Provide 5-7 actionable creative recommendations with timing and priority:
+    - Recommendation: [specific creative action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    CREATIVE INSIGHTS:
+    [Share 2-3 unique creative insights or innovative approaches for this specific business]
+
+    Focus on being highly specific to this {business_type} business and its target market. Make each recommendation actionable and tailored to their unique value proposition.
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"You are a creative marketing expert specializing in {business_type} businesses. Provide innovative, creative solutions that will help businesses stand out.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=1500,
-            temperature=0.8,
-        )
+        if OPENAI_AVAILABLE:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a creative marketing expert specializing in {business_type} businesses. You provide innovative, specific, and actionable creative solutions. Always respond in the exact format requested with clear sections and bullet points.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=2000,
+                temperature=0.8,
+            )
 
-        creative_analysis_text = response.choices[0].message.content
+            creative_analysis_text = response.choices[0].message.content
+        else:
+            creative_analysis_text = f"Creative analysis for {business_name} - {business_type} business"
+
+        # Parse the AI response to extract structured data
+        sections = creative_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'KEY_RECOMMENDATIONS' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
 
         return {
             "creative_analysis": {
-                "brand_identity": f"Modern, innovative {business_type}",
-                "marketing_ideas": [
-                    "Social media campaigns",
-                    "Influencer partnerships",
-                    "Content marketing",
-                    "Video marketing",
-                    "Interactive experiences",
-                ],
-                "unique_angles": [
-                    "Customer-centric approach",
-                    "Technology integration",
-                    "Sustainability focus",
-                    "Community building",
-                ],
-                "content_strategy": [
-                    "Educational content",
-                    "Behind-the-scenes content",
-                    "Customer testimonials",
-                    "Industry insights",
-                ],
-                "visual_concepts": [
-                    "Modern, clean design",
-                    "Bold color palette",
-                    "Professional photography",
-                    "Consistent branding",
-                ],
-                "campaign_ideas": [
-                    "Launch campaign",
-                    "Seasonal promotions",
-                    "Referral programs",
-                    "Loyalty programs",
-                ],
-                "recommendations": [
-                    "Develop a strong, memorable brand identity",
-                    "Create engaging content marketing strategies",
-                    "Leverage social media and digital platforms",
-                    "Focus on customer experience and satisfaction",
-                    "Build community and engagement",
-                ],
+                "brand_identity": parsed_data.get("BRAND_IDENTITY", [f"Modern, innovative {business_type}"]),
+                "marketing_ideas": parsed_data.get("MARKETING_IDEAS", ["Social media campaigns", "Influencer partnerships", "Content marketing"]),
+                "unique_angles": parsed_data.get("UNIQUE_ANGLES", ["Customer-centric approach", "Technology integration", "Sustainability focus"]),
+                "content_strategy": parsed_data.get("CONTENT_STRATEGY", ["Educational content", "Behind-the-scenes content", "Customer testimonials"]),
+                "visual_concepts": parsed_data.get("VISUAL_CONCEPTS", ["Modern, clean design", "Bold color palette", "Professional photography"]),
+                "campaign_ideas": parsed_data.get("CAMPAIGN_IDEAS", ["Launch campaign", "Seasonal promotions", "Referral programs"]),
+                "recommendations": parsed_data.get("KEY_RECOMMENDATIONS", [
+                    {
+                        "action": "Develop a strong, memorable brand identity",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Establish brand recognition and market differentiation"
+                    },
+                    {
+                        "action": "Create engaging content marketing strategies",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Build customer engagement and drive traffic"
+                    },
+                    {
+                        "action": "Leverage social media and digital platforms",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Expand reach and connect with target audience"
+                    },
+                    {
+                        "action": "Focus on customer experience and satisfaction",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Build customer loyalty and positive word-of-mouth"
+                    },
+                    {
+                        "action": "Build community and engagement",
+                        "timing": "next month",
+                        "priority": "Low",
+                        "impact": "Create loyal customer base and brand advocates"
+                    }
+                ]),
+                "creative_insights": parsed_data.get("CREATIVE_INSIGHTS", [
+                    "Leverage technology to create unique customer experiences",
+                    "Focus on building emotional connections with target audience"
+                ]),
                 "analysis_text": creative_analysis_text,
             }
         }
@@ -528,15 +830,24 @@ async def analyze_creative(business_data: Dict[str, Any], strategic_plan: Dict[s
         print(f"Error in creative analysis: {e}")
         return {
             "creative_analysis": {
-                "brand_identity": f"Modern, innovative {business_type}",
+                "brand_identity": [f"Modern, innovative {business_type}"],
                 "marketing_ideas": ["Social media campaigns", "Influencer partnerships", "Content marketing"],
                 "unique_angles": ["Customer-centric approach", "Technology integration", "Sustainability focus"],
+                "content_strategy": ["Educational content", "Behind-the-scenes content", "Customer testimonials"],
+                "visual_concepts": ["Modern, clean design", "Bold color palette", "Professional photography"],
+                "campaign_ideas": ["Launch campaign", "Seasonal promotions", "Referral programs"],
                 "recommendations": [
                     "Develop a strong, memorable brand identity",
                     "Create engaging content marketing strategies",
                     "Leverage social media and digital platforms",
-                    "Focus on customer experience and satisfaction"
-                ]
+                    "Focus on customer experience and satisfaction",
+                    "Build community and engagement"
+                ],
+                "creative_insights": [
+                    "Leverage technology to create unique customer experiences",
+                    "Focus on building emotional connections with target audience"
+                ],
+                "analysis_text": f"Creative analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})"
             }
         }
 
@@ -552,41 +863,189 @@ async def analyze_financial(business_data: Dict[str, Any], strategic_plan: Dict[
     prompt = f"""
     As a financial analyst, provide comprehensive financial analysis for:
 
-    Business: {business_name}
-    Type: {business_type}
-    Initial Investment: {f"${initial_investment:,.0f}" if initial_investment else "Not specified"}
-    Team Size: {f"{team_size} employees" if team_size else "Not specified"}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Initial Investment: {f"${initial_investment:,.0f}" if initial_investment else "Not specified"}
+    - Team Size: {f"{team_size} employees" if team_size else "Not specified"}
+    - Strategic Vision: {strategic_plan.get('vision', 'Not available') if strategic_plan else 'Not available'}
 
-    Strategic Context: {strategic_plan.get('vision', '') if strategic_plan else 'Not available'}
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    Please provide:
-    1. Financial projections and forecasts
-    2. Break-even analysis
-    3. Funding recommendations
-    4. Cost structure analysis
-    5. Revenue model optimization
-    6. Financial risk assessment
-    7. Key financial metrics and KPIs
+    FINANCIAL PROJECTIONS:
+    [Provide 3-5 year financial projections with specific revenue, expense, and profit estimates]
 
-    Focus on practical, actionable financial advice for this {business_type} business.
+    BREAK-EVEN ANALYSIS:
+    [Calculate and explain break-even timeline and requirements for this specific business]
+
+    FUNDING RECOMMENDATIONS:
+    [List 5-7 funding sources and strategies appropriate for this business type and size]
+
+    COST STRUCTURE:
+    [Break down fixed and variable costs specific to this {business_type} business]
+
+    REVENUE MODEL:
+    [Suggest 4-6 revenue streams and pricing strategies for this business]
+
+    FINANCIAL RISKS:
+    [Identify 4-6 key financial risks and mitigation strategies]
+
+    KEY METRICS:
+    [Define 5-7 important financial KPIs to track for this business]
+
+    ACTIONABLE RECOMMENDATIONS:
+    [Provide 6-8 specific, actionable financial recommendations with timing and priority:
+    - Recommendation: [specific financial action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Focus on practical, realistic financial advice tailored to this {business_type} business and its specific circumstances.
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"You are a financial analyst specializing in {business_type} businesses. Provide practical, actionable financial advice and projections.",
+        if OPENAI_AVAILABLE:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a financial analyst specializing in {business_type} businesses. You provide practical, actionable financial advice and realistic projections. Always respond in the exact format requested with clear sections and specific numbers where possible.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=2000,
+                temperature=0.7,
+            )
+
+            financial_analysis_text = response.choices[0].message.content
+        else:
+            financial_analysis_text = f"Financial analysis for {business_name} - {business_type} business"
+
+        # Parse the AI response to extract structured data
+        sections = financial_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'ACTIONABLE_RECOMMENDATIONS' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
+
+        return {
+            "financial_analysis": {
+                "startup_costs": initial_investment or 50000,
+                "projected_revenue": parsed_data.get("FINANCIAL_PROJECTIONS", ["To be determined based on market analysis"]),
+                "break_even_analysis": parsed_data.get("BREAK-EVEN_ANALYSIS", ["6-12 months projected"]),
+                "funding_recommendations": parsed_data.get("FUNDING_RECOMMENDATIONS", [
+                    "Bootstrap initially",
+                    "Seek angel investment",
+                    "Consider crowdfunding",
+                    "Explore small business loans",
+                ]),
+                "cost_structure": {
+                    "fixed_costs": parsed_data.get("COST_STRUCTURE", ["Rent", "Utilities", "Insurance", "Software subscriptions"]),
+                    "variable_costs": ["Materials", "Labor", "Marketing", "Commissions"],
                 },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=1500,
-            temperature=0.7,
-        )
+                "revenue_model": {
+                    "primary_streams": parsed_data.get("REVENUE_MODEL", ["Product sales", "Service fees"]),
+                    "secondary_streams": ["Consulting", "Training", "Licensing"],
+                },
+                "financial_risks": parsed_data.get("FINANCIAL_RISKS", [
+                    "Market volatility",
+                    "Cash flow challenges",
+                    "Unexpected expenses",
+                    "Competition pressure"
+                ]),
+                "key_metrics": parsed_data.get("KEY_METRICS", [
+                    "Monthly Recurring Revenue (MRR)",
+                    "Customer Acquisition Cost (CAC)",
+                    "Lifetime Value (LTV)",
+                    "Burn Rate",
+                    "Profit Margins"
+                ]),
+                "financial_projections": {
+                    "year_1": {
+                        "revenue": initial_investment * 2 if initial_investment else 100000,
+                        "expenses": initial_investment * 1.5 if initial_investment else 75000,
+                        "profit_margin": "25%",
+                    },
+                    "year_2": {
+                        "revenue": initial_investment * 4 if initial_investment else 200000,
+                        "expenses": initial_investment * 3 if initial_investment else 150000,
+                        "profit_margin": "30%",
+                    },
+                    "year_3": {
+                        "revenue": initial_investment * 6 if initial_investment else 300000,
+                        "expenses": initial_investment * 4.5 if initial_investment else 225000,
+                        "profit_margin": "35%",
+                    },
+                },
+                "recommendations": parsed_data.get("ACTIONABLE_RECOMMENDATIONS", [
+                    {
+                        "action": "Maintain strict financial discipline and budgeting",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Ensure financial stability and prevent cash flow issues"
+                    },
+                    {
+                        "action": "Diversify funding sources and revenue streams",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Reduce financial risk and increase revenue potential"
+                    },
+                    {
+                        "action": "Monitor cash flow and financial metrics closely",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Identify financial trends and make informed decisions"
+                    },
+                    {
+                        "action": "Plan for scalability and growth investments",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Prepare for business expansion and increased capacity"
+                    },
+                    {
+                        "action": "Build emergency fund for unexpected expenses",
+                        "timing": "next month",
+                        "priority": "Low",
+                        "impact": "Provide financial security and risk mitigation"
+                    },
+                ]),
+                "analysis_text": financial_analysis_text,
+            }
+        }
 
-        financial_analysis_text = response.choices[0].message.content
-
+    except Exception as e:
+        print(f"Error in financial analysis: {e}")
         return {
             "financial_analysis": {
                 "startup_costs": initial_investment or 50000,
@@ -606,6 +1065,19 @@ async def analyze_financial(business_data: Dict[str, Any], strategic_plan: Dict[
                     "primary_streams": ["Product sales", "Service fees"],
                     "secondary_streams": ["Consulting", "Training", "Licensing"],
                 },
+                "financial_risks": [
+                    "Market volatility",
+                    "Cash flow challenges",
+                    "Unexpected expenses",
+                    "Competition pressure"
+                ],
+                "key_metrics": [
+                    "Monthly Recurring Revenue (MRR)",
+                    "Customer Acquisition Cost (CAC)",
+                    "Lifetime Value (LTV)",
+                    "Burn Rate",
+                    "Profit Margins"
+                ],
                 "financial_projections": {
                     "year_1": {
                         "revenue": initial_investment * 2 if initial_investment else 100000,
@@ -630,24 +1102,7 @@ async def analyze_financial(business_data: Dict[str, Any], strategic_plan: Dict[
                     "Plan for scalability and growth investments",
                     "Build emergency fund for unexpected expenses",
                 ],
-                "analysis_text": financial_analysis_text,
-            }
-        }
-
-    except Exception as e:
-        print(f"Error in financial analysis: {e}")
-        return {
-            "financial_analysis": {
-                "startup_costs": initial_investment or 50000,
-                "projected_revenue": "To be determined based on market analysis",
-                "break_even_analysis": "6-12 months projected",
-                "funding_recommendations": ["Bootstrap initially", "Seek angel investment", "Consider crowdfunding"],
-                "recommendations": [
-                    "Maintain strict financial discipline and budgeting",
-                    "Diversify funding sources and revenue streams",
-                    "Monitor cash flow and financial metrics closely",
-                    "Plan for scalability and growth investments"
-                ]
+                "analysis_text": f"Financial analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})",
             }
         }
 
@@ -663,42 +1118,180 @@ async def analyze_sales(business_data: Dict[str, Any], strategic_plan: Dict[str,
     prompt = f"""
     As a sales strategy expert, provide comprehensive sales strategy for:
 
-    Business: {business_name}
-    Type: {business_type}
-    Target Market: {target_market}
-    Business Model: {business_model}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Target Market: {target_market}
+    - Business Model: {business_model}
+    - Strategic Vision: {strategic_plan.get('vision', 'Not available') if strategic_plan else 'Not available'}
 
-    Strategic Context: {strategic_plan.get('vision', '') if strategic_plan else 'Not available'}
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    Please provide:
-    1. Sales strategy and approach
-    2. Target customer segments
-    3. Sales channels and methods
-    4. Pricing strategy
-    5. Sales process and pipeline
-    6. Lead generation strategies
-    7. Customer acquisition tactics
-    8. Sales team structure and training
+    SALES STRATEGY:
+    [Provide 4-6 core sales strategies specific to this {business_type} business]
 
-    Focus on practical, effective sales strategies for this {business_type} business.
+    TARGET CUSTOMERS:
+    [Define 3-5 specific customer segments with detailed characteristics]
+
+    SALES CHANNELS:
+    [List 5-7 effective sales channels and methods for this business]
+
+    PRICING STRATEGY:
+    [Suggest 3-4 pricing approaches and strategies for this business model]
+
+    SALES PROCESS:
+    [Outline 6-8 step sales process tailored to this business type]
+
+    LEAD GENERATION:
+    [Provide 5-7 lead generation strategies specific to this target market]
+
+    CUSTOMER ACQUISITION:
+    [Suggest 5-7 customer acquisition tactics for this business]
+
+    SALES TEAM STRUCTURE:
+    [Recommend team structure, roles, and training for this business size]
+
+    KEY RECOMMENDATIONS:
+    [Provide 6-8 actionable sales recommendations with timing and priority:
+    - Recommendation: [specific sales action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Focus on practical, effective sales strategies that will drive revenue growth for this specific {business_type} business.
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"You are a sales strategy expert specializing in {business_type} businesses. Provide practical, effective sales strategies and tactics.",
+        if OPENAI_AVAILABLE:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a sales strategy expert specializing in {business_type} businesses. You provide practical, effective sales strategies and actionable tactics. Always respond in the exact format requested with clear sections and specific strategies.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=2000,
+                temperature=0.7,
+            )
+
+            sales_analysis_text = response.choices[0].message.content
+        else:
+            sales_analysis_text = f"Sales analysis for {business_name} - {business_type} business"
+
+        # Parse the AI response to extract structured data
+        sections = sales_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'KEY_RECOMMENDATIONS' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
+
+        return {
+            "sales_strategy": {
+                "target_customers": parsed_data.get("TARGET_CUSTOMERS", [target_market or "General market"]),
+                "sales_channels": parsed_data.get("SALES_CHANNELS", [
+                    "Direct sales",
+                    "Online platform",
+                    "Partnerships",
+                    "Social media",
+                    "Referrals",
+                ]),
+                "pricing_strategy": parsed_data.get("PRICING_STRATEGY", ["Competitive pricing with value-based options"]),
+                "sales_process": parsed_data.get("SALES_PROCESS", [
+                    "Lead generation",
+                    "Qualification",
+                    "Presentation",
+                    "Closing",
+                    "Follow-up",
+                ]),
+                "lead_generation": parsed_data.get("LEAD_GENERATION", [
+                    "Content marketing",
+                    "Social media advertising",
+                    "Networking events",
+                    "Referral programs",
+                    "Cold outreach",
+                ]),
+                "customer_acquisition": parsed_data.get("CUSTOMER_ACQUISITION", [
+                    "Free trials",
+                    "Discounts for early adopters",
+                    "Referral incentives",
+                    "Partnership marketing",
+                    "Content marketing",
+                ]),
+                "sales_team": {
+                    "structure": parsed_data.get("SALES_TEAM_STRUCTURE", ["Small, focused team"]),
+                    "training": ["Product knowledge", "Sales techniques", "Customer service"],
+                    "incentives": ["Commission-based", "Performance bonuses", "Career growth"],
                 },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=1500,
-            temperature=0.7,
-        )
+                "recommendations": parsed_data.get("KEY_RECOMMENDATIONS", [
+                    {
+                        "action": "Develop a comprehensive sales strategy and process",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Establish systematic approach to sales and customer acquisition"
+                    },
+                    {
+                        "action": "Build strong relationships with target customers",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Increase customer loyalty and repeat business"
+                    },
+                    {
+                        "action": "Implement effective lead generation and qualification",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Improve sales pipeline quality and conversion rates"
+                    },
+                    {
+                        "action": "Focus on value-based selling and customer success",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Differentiate from competitors and increase customer satisfaction"
+                    },
+                    {
+                        "action": "Invest in sales team training and development",
+                        "timing": "next month",
+                        "priority": "Low",
+                        "impact": "Improve sales performance and team capabilities"
+                    },
+                ]),
+                "analysis_text": sales_analysis_text,
+            }
+        }
 
-        sales_analysis_text = response.choices[0].message.content
-
+    except Exception as e:
+        print(f"Error in sales analysis: {e}")
         return {
             "sales_strategy": {
                 "target_customers": [target_market or "General market"],
@@ -743,24 +1336,7 @@ async def analyze_sales(business_data: Dict[str, Any], strategic_plan: Dict[str,
                     "Focus on value-based selling and customer success",
                     "Invest in sales team training and development",
                 ],
-                "analysis_text": sales_analysis_text,
-            }
-        }
-
-    except Exception as e:
-        print(f"Error in sales analysis: {e}")
-        return {
-            "sales_strategy": {
-                "target_customers": [target_market or "General market"],
-                "sales_channels": ["Direct sales", "Online platform", "Partnerships"],
-                "pricing_strategy": "Competitive pricing with value-based options",
-                "sales_process": ["Lead generation", "Qualification", "Presentation", "Closing"],
-                "recommendations": [
-                    "Develop a comprehensive sales strategy and process",
-                    "Build strong relationships with target customers",
-                    "Implement effective lead generation and qualification",
-                    "Focus on value-based selling and customer success"
-                ]
+                "analysis_text": f"Sales analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})",
             }
         }
 
@@ -784,77 +1360,177 @@ async def analyze_analytics(business_data: Dict[str, Any], all_agent_data: Dict[
     prompt = f"""
     As a business analytics expert, provide comprehensive analytics and insights for:
 
-    Business: {business_name}
-    Type: {business_type}
-    Market Size: {market_size}
-    Competitors: {', '.join(competitors)}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Market Size: {market_size}
+    - Competitors: {', '.join(competitors)}
 
-    Strategic Analysis: {strategic_insights.get('vision', 'Not available')}
-    Creative Analysis: {creative_insights.get('brand_identity', 'Not available')}
-    Financial Analysis: {financial_insights.get('startup_costs', 'Not available')}
-    Sales Strategy: {sales_insights.get('target_customers', 'Not available')}
-    SWOT Analysis: {swot_insights.get('strengths', 'Not available')}
-    Business Model: {bmc_insights.get('key_partners', 'Not available')}
+    INTEGRATED ANALYSIS DATA:
+    - Strategic Vision: {strategic_insights.get('vision', 'Not available')}
+    - Creative Brand Identity: {creative_insights.get('brand_identity', 'Not available')}
+    - Financial Startup Costs: {financial_insights.get('startup_costs', 'Not available')}
+    - Sales Target Customers: {sales_insights.get('target_customers', 'Not available')}
+    - SWOT Strengths: {swot_insights.get('strengths', 'Not available')}
+    - Business Model Partners: {bmc_insights.get('key_partners', 'Not available')}
 
-    Please provide:
-    1. Comprehensive market analysis
-    2. Competitive landscape assessment
-    3. Success probability analysis
-    4. Key performance indicators
-    5. Data-driven insights and recommendations
-    6. Risk assessment and mitigation
-    7. Growth opportunities identification
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    Synthesize all the information from different analyses to provide actionable insights.
+    MARKET ANALYSIS:
+    [Provide 4-6 comprehensive market insights including size, trends, and growth potential]
+
+    COMPETITIVE LANDSCAPE:
+    [Analyze 4-6 competitive factors and positioning opportunities for this business]
+
+    SUCCESS PROBABILITY:
+    [Assess 4-5 factors that influence the business success probability with specific percentages]
+
+    KEY PERFORMANCE INDICATORS:
+    [Define 5-7 critical KPIs that should be tracked for this business type]
+
+    DATA-DRIVEN INSIGHTS:
+    [Provide 4-6 actionable insights based on the integrated analysis of all agent data]
+
+    RISK ASSESSMENT:
+    [Identify 4-6 key risks and data-driven mitigation strategies]
+
+    GROWTH OPPORTUNITIES:
+    [Outline 4-6 specific growth opportunities with supporting data insights]
+
+    ANALYTICS RECOMMENDATIONS:
+    [Provide 6-8 data-driven recommendations with timing and priority:
+    - Recommendation: [specific action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Synthesize all the information from different analyses to provide actionable, data-driven insights for this {business_type} business.
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"You are a business analytics expert specializing in {business_type} businesses. Synthesize multiple analyses to provide comprehensive, data-driven insights.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=1500,
-            temperature=0.7,
-        )
+        if OPENAI_AVAILABLE:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a business analytics expert specializing in {business_type} businesses. You synthesize multiple analyses to provide comprehensive, data-driven insights and actionable recommendations. Always respond in the exact format requested with clear sections and specific analytics insights.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=2500,
+                temperature=0.7,
+            )
 
-        analytics_analysis_text = response.choices[0].message.content
+            analytics_analysis_text = response.choices[0].message.content
+        else:
+            analytics_analysis_text = f"Analytics analysis for {business_name} - {business_type} business"
+
+        # Parse the AI response to extract structured data
+        sections = analytics_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'ANALYTICS_RECOMMENDATIONS' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
 
         return {
             "analytics_summary": {
                 "market_size": market_size or "To be analyzed",
                 "competition_level": "Moderate to high",
                 "success_probability": {
-                    "overall_success_rate": "75%",
+                    "overall_success_rate": "70%",
                     "market_conditions": "Favorable",
                     "competitive_advantage": "Strong",
                     "execution_risk": "Medium",
                 },
-                "key_metrics": [
+                "key_metrics": parsed_data.get("KEY_PERFORMANCE_INDICATORS", [
                     "Customer acquisition cost",
                     "Lifetime value",
                     "Conversion rate",
                     "Customer satisfaction score",
                     "Revenue growth rate",
-                ],
-                "competitive_analysis": f"Analysis of {len(competitors)} competitors in the {business_type} market",
-                "key_insights": [
+                ]),
+                "competitive_analysis": parsed_data.get("COMPETITIVE_LANDSCAPE", [f"Analysis of {len(competitors)} competitors in the {business_type} market"]),
+                "data_insights": parsed_data.get("DATA-DRIVEN_INSIGHTS", [
                     "Strong market opportunity",
                     "Clear competitive positioning",
                     "Solid financial foundation",
                     "Effective sales strategy",
-                ],
-                "recommendations": [
-                    "Track and analyze key performance metrics",
-                    "Use data-driven insights for decision making",
-                    "Monitor market trends and competitive landscape",
-                    "Continuously optimize based on performance data",
-                    "Implement A/B testing for optimization",
-                ],
+                ]),
+                "risk_assessment": parsed_data.get("RISK_ASSESSMENT", [
+                    "Market volatility risk",
+                    "Competition intensity",
+                    "Execution challenges",
+                    "Resource constraints"
+                ]),
+                "growth_opportunities": parsed_data.get("GROWTH_OPPORTUNITIES", [
+                    "Market expansion potential",
+                    "Technology integration opportunities",
+                    "Partnership development",
+                    "Product diversification"
+                ]),
+                "recommendations": parsed_data.get("ANALYTICS_RECOMMENDATIONS", [
+                    {
+                        "action": "Track and analyze key performance metrics",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Establish data-driven decision making foundation"
+                    },
+                    {
+                        "action": "Use data-driven insights for decision making",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Improve business decisions and strategic planning"
+                    },
+                    {
+                        "action": "Monitor market trends and competitive landscape",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Stay ahead of market changes and competitive threats"
+                    },
+                    {
+                        "action": "Continuously optimize based on performance data",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Improve operational efficiency and customer satisfaction"
+                    },
+                    {
+                        "action": "Implement A/B testing for optimization",
+                        "timing": "next month",
+                        "priority": "Low",
+                        "impact": "Systematically improve conversion rates and user experience"
+                    },
+                ]),
                 "analysis_text": analytics_analysis_text,
             }
         }
@@ -867,13 +1543,175 @@ async def analyze_analytics(business_data: Dict[str, Any], all_agent_data: Dict[
                 "competition_level": "Moderate to high",
                 "success_probability": {"overall_success_rate": "70%"},
                 "key_metrics": ["Customer acquisition cost", "Lifetime value", "Conversion rate"],
+                "data_insights": [
+                    "Strong market opportunity",
+                    "Clear competitive positioning",
+                    "Solid financial foundation"
+                ],
+                "risk_assessment": [
+                    "Market volatility risk",
+                    "Competition intensity",
+                    "Execution challenges"
+                ],
+                "growth_opportunities": [
+                    "Market expansion potential",
+                    "Technology integration opportunities",
+                    "Partnership development"
+                ],
                 "recommendations": [
-                    "Track and analyze key performance metrics",
-                    "Use data-driven insights for decision making",
-                    "Monitor market trends and competitive landscape",
-                    "Continuously optimize based on performance data"
-                ]
+                    {
+                        "action": "Track and analyze key performance metrics",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Establish data-driven decision making foundation"
+                    },
+                    {
+                        "action": "Use data-driven insights for decision making",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Improve business decisions and strategic planning"
+                    },
+                    {
+                        "action": "Monitor market trends and competitive landscape",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Stay ahead of market changes and competitive threats"
+                    },
+                    {
+                        "action": "Continuously optimize based on performance data",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Improve operational efficiency and customer satisfaction"
+                    }
+                ],
+                "analysis_text": f"Analytics analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})"
             }
+        }
+
+
+async def assign_tasks_to_agents(business_data: Dict[str, Any], analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+    """AI-powered task assignment to agents based on business analysis"""
+    
+    business_name = business_data.get("business_name", "")
+    business_type = business_data.get("business_type", "")
+    
+    # Extract key insights from analysis
+    strategic_plan = analysis_results.get("strategic_plan", {})
+    swot_analysis = analysis_results.get("swot_analysis", {})
+    financial_analysis = analysis_results.get("financial_analysis", {})
+    sales_strategy = analysis_results.get("sales_strategy", {})
+    
+    prompt = f"""
+    As an AI task orchestrator, assign specific tasks to different agents for:
+
+    Business: {business_name}
+    Type: {business_type}
+    
+    Strategic Plan: {strategic_plan.get('vision', 'Not available')}
+    SWOT Analysis: {swot_analysis.get('strengths', 'Not available')}
+    Financial Analysis: {financial_analysis.get('startup_costs', 'Not available')}
+    Sales Strategy: {sales_strategy.get('target_customers', 'Not available')}
+    
+    Available Agents:
+    1. Strategic Agent - Market analysis, goal setting, strategic planning
+    2. Financial Agent - Budget planning, financial projections, cost analysis
+    3. Sales Agent - Sales strategy, customer acquisition, pipeline management
+    4. Creative Agent - Branding, marketing, content creation
+    5. Analytics Agent - Data analysis, performance tracking, insights
+    6. Manager Agent - Operations, team management, process optimization
+    7. SWOT Agent - Competitive analysis, risk assessment
+    8. Business Model Agent - Revenue model, partnerships, value proposition
+    
+    Please assign specific, actionable tasks to each agent based on the business analysis.
+    Consider the business type, current situation, and strategic goals.
+    """
+
+    try:
+        if OPENAI_AVAILABLE:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an AI task orchestrator that intelligently assigns business tasks to specialized agents based on business analysis and requirements.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=1500,
+                temperature=0.7,
+            )
+
+            task_assignment_text = response.choices[0].message.content
+        else:
+            task_assignment_text = f"Task assignment for {business_name} - {business_type} business"
+
+        # Create structured task assignments
+        task_assignments = {
+            "strategic_agent": [
+                "Conduct market research and validation",
+                "Develop strategic goals and KPIs",
+                "Create competitive positioning strategy",
+                "Plan market expansion opportunities",
+            ],
+            "financial_agent": [
+                "Create detailed financial projections",
+                "Develop budget and cash flow management",
+                "Analyze funding requirements and options",
+                "Set up financial monitoring systems",
+            ],
+            "sales_agent": [
+                "Develop sales strategy and process",
+                "Create lead generation campaigns",
+                "Design customer acquisition programs",
+                "Build sales team training programs",
+            ],
+            "creative_agent": [
+                "Develop brand identity and guidelines",
+                "Create marketing content and campaigns",
+                "Design customer engagement strategies",
+                "Plan social media and digital presence",
+            ],
+            "analytics_agent": [
+                "Set up performance tracking system",
+                "Create data analysis dashboards",
+                "Develop customer insights programs",
+                "Monitor competitive landscape",
+            ],
+            "manager_agent": [
+                "Develop operational processes",
+                "Create team management systems",
+                "Implement quality control measures",
+                "Plan risk management strategies",
+            ],
+            "swot_agent": [
+                "Monitor competitive landscape",
+                "Track market trends and changes",
+                "Assess new opportunities and threats",
+                "Update SWOT analysis regularly",
+            ],
+            "business_model_agent": [
+                "Optimize revenue model",
+                "Develop partnership strategy",
+                "Enhance value proposition",
+                "Scale business model",
+            ],
+            "assignment_analysis": task_assignment_text,
+        }
+
+        return task_assignments
+
+    except Exception as e:
+        print(f"Error in task assignment: {e}")
+        # Return default task assignments
+        return {
+            "strategic_agent": ["Market research", "Strategic planning"],
+            "financial_agent": ["Financial planning", "Budget management"],
+            "sales_agent": ["Sales strategy", "Customer acquisition"],
+            "creative_agent": ["Branding", "Marketing"],
+            "analytics_agent": ["Performance tracking", "Data analysis"],
+            "manager_agent": ["Operations", "Team management"],
+            "swot_agent": ["Competitive analysis", "Risk assessment"],
+            "business_model_agent": ["Revenue optimization", "Partnerships"],
         }
 
 
@@ -899,66 +1737,60 @@ async def analyze_manager(business_data: Dict[str, Any], all_agent_data: Dict[st
     prompt = f"""
     As a senior business manager and project coordinator, analyze the following business and create dynamic task assignments:
 
-    Business: {business_name}
-    Type: {business_type}
-    Team Size: {f"{team_size} employees" if team_size else "Not specified"}
-    Target Market: {target_market}
-    Value Proposition: {unique_value_proposition}
-    Growth Goals: {', '.join(growth_goals)}
+    BUSINESS INFORMATION:
+    - Name: {business_name}
+    - Type: {business_type}
+    - Team Size: {f"{team_size} employees" if team_size else "Not specified"}
+    - Target Market: {target_market}
+    - Value Proposition: {unique_value_proposition}
+    - Growth Goals: {', '.join(growth_goals)}
 
-    Strategic Analysis: {strategic_plan.get('vision', 'Not available')}
-    Creative Analysis: {creative_analysis.get('brand_identity', 'Not available')}
-    Financial Analysis: {financial_analysis.get('startup_costs', 'Not available')}
-    Sales Strategy: {sales_strategy.get('target_customers', 'Not available')}
-    SWOT Analysis: {swot_analysis.get('strengths', 'Not available')}
-    Business Model: {bmc_analysis.get('key_partners', 'Not available')}
-    Analytics Summary: {analytics_summary.get('market_size', 'Not available')}
+    INTEGRATED AGENT ANALYSIS:
+    - Strategic Vision: {strategic_plan.get('vision', 'Not available')}
+    - Creative Brand Identity: {creative_analysis.get('brand_identity', 'Not available')}
+    - Financial Startup Costs: {financial_analysis.get('startup_costs', 'Not available')}
+    - Sales Target Customers: {sales_strategy.get('target_customers', 'Not available')}
+    - SWOT Strengths: {swot_analysis.get('strengths', 'Not available')}
+    - Business Model Partners: {bmc_analysis.get('key_partners', 'Not available')}
+    - Analytics Market Size: {analytics_summary.get('market_size', 'Not available')}
 
-    Based on this comprehensive analysis, create specific, actionable tasks for each agent:
+    RESPONSE FORMAT - Please structure your response exactly as follows:
 
-    1. Strategic Agent Tasks:
-       - Market research and competitive analysis
-       - Strategic planning and goal setting
-       - Business model optimization
+    OPERATIONAL PRIORITIES:
+    [List 4-6 top operational priorities for this business based on the integrated analysis]
 
-    2. Creative Agent Tasks:
-       - Brand identity development
-       - Marketing content creation
-       - Visual design and creative assets
+    STRATEGIC AGENT TASKS:
+    [Provide 4-6 specific, actionable tasks for strategic planning and market analysis]
 
-    3. Financial Agent Tasks:
-       - Financial planning and budgeting
-       - Cost analysis and optimization
-       - Funding strategy development
+    CREATIVE AGENT TASKS:
+    [Outline 4-6 creative tasks for brand development and marketing content]
 
-    4. Sales Agent Tasks:
-       - Sales strategy development
-       - Customer acquisition campaigns
-       - Sales process optimization
+    FINANCIAL AGENT TASKS:
+    [Define 4-6 financial tasks for planning, budgeting, and cost optimization]
 
-    5. Analytics Agent Tasks:
-       - Performance tracking setup
-       - Data analysis and insights
-       - KPI monitoring systems
+    SALES AGENT TASKS:
+    [Specify 4-6 sales tasks for customer acquisition and revenue generation]
 
-    6. SWOT Agent Tasks:
-       - Competitive landscape analysis
-       - Risk assessment and mitigation
-       - Opportunity identification
+    ANALYTICS AGENT TASKS:
+    [Detail 4-6 analytics tasks for performance tracking and data insights]
 
-    7. Business Model Agent Tasks:
-       - Revenue model optimization
-       - Partnership development
-       - Value proposition enhancement
+    TEAM MANAGEMENT:
+    [Provide 3-4 team management recommendations for this business size]
 
-    For each task, provide:
-    - Specific, actionable description
-    - Priority level (High/Medium/Low)
-    - Estimated timeline
-    - Expected outcomes
-    - Required resources
+    PROJECT TIMELINE:
+    [Outline 4-5 key milestones and timeline for task execution]
 
-    Focus on creating tasks that are immediately actionable and will drive business growth.
+    SUCCESS METRICS:
+    [Define 4-5 key metrics to measure task completion and business success]
+
+    MANAGEMENT RECOMMENDATIONS:
+    [Provide 5-7 actionable management recommendations with timing and priority:
+    - Recommendation: [specific management action]
+    - Timing: [this week/next week/this month/next month]
+    - Priority: [High/Medium/Low - how urgent/rush it is]
+    - Expected Impact: [brief description of expected outcome]]
+
+    Focus on creating specific, actionable tasks that leverage the strengths identified in the SWOT analysis and align with the strategic vision for this {business_type} business.
     """
 
     try:
@@ -968,69 +1800,211 @@ async def analyze_manager(business_data: Dict[str, Any], all_agent_data: Dict[st
                 messages=[
                     {
                         "role": "system",
-                        "content": f"You are a senior business manager specializing in {business_type} businesses. Create specific, actionable task assignments that will drive business success.",
+                        "content": f"You are a senior business manager and project coordinator specializing in {business_type} businesses. You create comprehensive, actionable task assignments and operational plans. Always respond in the exact format requested with clear sections and specific task details.",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=2000,
+                max_tokens=2500,
                 temperature=0.7,
             )
 
-            management_analysis_text = response.choices[0].message.content
+            manager_analysis_text = response.choices[0].message.content
         else:
-            management_analysis_text = f"Management analysis for {business_name} - {business_type} business"
+            manager_analysis_text = f"Manager analysis for {business_name} - {business_type} business"
 
-        # Create dynamic task assignments based on business type and analysis
+        # Parse the AI response to extract structured data
+        sections = manager_analysis_text.split('\n\n')
+        parsed_data = {}
+        
+        for section in sections:
+            if ':' in section:
+                title, content = section.split(':', 1)
+                title = title.strip().upper().replace(' ', '_')
+                
+                # Special handling for recommendations with timing and priority
+                if 'MANAGEMENT_RECOMMENDATIONS' in title:
+                    recommendations = []
+                    lines = content.strip().split('\n')
+                    current_rec = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('- Recommendation:'):
+                            if current_rec:
+                                recommendations.append(current_rec)
+                            current_rec = {'action': line.split(':', 1)[1].strip()}
+                        elif line.startswith('- Timing:'):
+                            current_rec['timing'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Priority:'):
+                            current_rec['priority'] = line.split(':', 1)[1].strip()
+                        elif line.startswith('- Expected Impact:'):
+                            current_rec['impact'] = line.split(':', 1)[1].strip()
+                    
+                    if current_rec:
+                        recommendations.append(current_rec)
+                    
+                    parsed_data[title] = recommendations
+                else:
+                    # Extract bullet points or numbered items for other sections
+                    items = [item.strip().strip('- ').strip('* ') for item in content.strip().split('\n') if item.strip()]
+                    parsed_data[title] = items
+
+        # Generate dynamic tasks based on parsed data
         dynamic_tasks = _generate_dynamic_tasks(business_data, all_agent_data)
 
         return {
-            "management_summary": {
-                "team_structure": f"Team size: {team_size or 'To be determined'}",
-                "operational_plan": [
-                    "Phase 1: Setup and Launch",
-                    "Phase 2: Growth and Optimization", 
-                    "Phase 3: Scale and Expansion",
-                ],
-                "risk_management": [
-                    "Market research and validation",
-                    "Financial planning and monitoring",
-                    "Legal compliance and insurance",
-                    "Operational contingency planning",
-                ],
-                "quality_control": [
-                    "Standard operating procedures",
-                    "Quality assurance processes",
-                    "Customer feedback systems",
-                    "Continuous improvement programs",
-                ],
-                "performance_management": [
-                    "KPI tracking and reporting",
-                    "Regular performance reviews",
-                    "Goal setting and alignment",
-                    "Recognition and reward systems",
-                ],
-                "success_factors": [
-                    "Strong leadership and vision",
-                    "Clear communication and processes",
-                    "Customer focus and satisfaction",
-                    "Continuous learning and adaptation",
-                ],
-                "analysis_text": management_analysis_text,
-            },
-            "dynamic_task_assignments": dynamic_tasks,
+            "manager_analysis": {
+                "operational_priorities": parsed_data.get("OPERATIONAL_PRIORITIES", [
+                    "Establish operational processes",
+                    "Build team capabilities",
+                    "Implement tracking systems",
+                    "Optimize resource allocation"
+                ]),
+                "agent_tasks": {
+                    "strategic_agent": parsed_data.get("STRATEGIC_AGENT_TASKS", [
+                        "Conduct market research and competitive analysis",
+                        "Develop strategic plan and goal setting",
+                        "Optimize business model",
+                        "Create implementation timeline"
+                    ]),
+                    "creative_agent": parsed_data.get("CREATIVE_AGENT_TASKS", [
+                        "Develop brand identity and guidelines",
+                        "Create marketing content and materials",
+                        "Design visual assets and templates",
+                        "Plan creative campaigns"
+                    ]),
+                    "financial_agent": parsed_data.get("FINANCIAL_AGENT_TASKS", [
+                        "Create financial projections and budgets",
+                        "Analyze cost structure and optimization",
+                        "Develop funding strategy",
+                        "Set up financial tracking systems"
+                    ]),
+                    "sales_agent": parsed_data.get("SALES_AGENT_TASKS", [
+                        "Develop sales strategy and process",
+                        "Create customer acquisition campaigns",
+                        "Optimize sales pipeline",
+                        "Train sales team"
+                    ]),
+                    "analytics_agent": parsed_data.get("ANALYTICS_AGENT_TASKS", [
+                        "Set up performance tracking systems",
+                        "Create data analysis dashboards",
+                        "Develop customer insights programs",
+                        "Monitor competitive landscape",
+                    ]),
+                },
+                "team_management": parsed_data.get("TEAM_MANAGEMENT", [
+                    "Establish clear roles and responsibilities",
+                    "Implement communication protocols",
+                    "Create performance evaluation systems",
+                    "Develop training programs"
+                ]),
+                "project_timeline": parsed_data.get("PROJECT_TIMELINE", [
+                    "Phase 1: Foundation (0-3 months)",
+                    "Phase 2: Launch (3-6 months)",
+                    "Phase 3: Growth (6-12 months)",
+                    "Phase 4: Optimization (12+ months)"
+                ]),
+                "success_metrics": parsed_data.get("SUCCESS_METRICS", [
+                    "Task completion rate",
+                    "Project milestone achievement",
+                    "Team productivity metrics",
+                    "Business performance indicators"
+                ]),
+                "recommendations": parsed_data.get("MANAGEMENT_RECOMMENDATIONS", [
+                    {
+                        "action": "Implement agile project management methodology",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Improve project delivery and team coordination"
+                    },
+                    {
+                        "action": "Establish regular team meetings and check-ins",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Enhance communication and accountability"
+                    },
+                    {
+                        "action": "Use data-driven decision making",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Improve decision quality and business outcomes"
+                    },
+                    {
+                        "action": "Focus on continuous improvement",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Build learning culture and operational excellence"
+                    },
+                    {
+                        "action": "Build strong team culture and communication",
+                        "timing": "next month",
+                        "priority": "Low",
+                        "impact": "Improve team morale and retention"
+                    },
+                ]),
+                "dynamic_tasks": dynamic_tasks,
+                "analysis_text": manager_analysis_text,
+            }
         }
 
     except Exception as e:
-        print(f"Error in management analysis: {e}")
-        # Return fallback with basic task assignments
+        print(f"Error in manager analysis: {e}")
         return {
-            "management_summary": {
-                "team_structure": f"Team size: {team_size or 'To be determined'}",
-                "operational_plan": ["Phase 1: Setup", "Phase 2: Launch", "Phase 3: Scale"],
-                "risk_management": ["Market research", "Financial planning", "Legal compliance"],
-                "success_factors": ["Strong leadership", "Clear vision", "Customer focus"]
-            },
-            "dynamic_task_assignments": _generate_dynamic_tasks(business_data, all_agent_data),
+            "manager_analysis": {
+                "operational_priorities": [
+                    "Establish operational processes",
+                    "Build team capabilities",
+                    "Implement tracking systems"
+                ],
+                "agent_tasks": {
+                    "strategic_agent": ["Conduct market research", "Develop strategic plan"],
+                    "creative_agent": ["Develop brand identity", "Create marketing content"],
+                    "financial_agent": ["Create financial projections", "Analyze cost structure"],
+                    "sales_agent": ["Develop sales strategy", "Create acquisition campaigns"],
+                    "analytics_agent": ["Set up tracking systems", "Analyze data insights"],
+                },
+                "team_management": [
+                    "Establish clear roles and responsibilities",
+                    "Implement communication protocols"
+                ],
+                "project_timeline": [
+                    "Phase 1: Foundation (0-3 months)",
+                    "Phase 2: Launch (3-6 months)",
+                    "Phase 3: Growth (6-12 months)"
+                ],
+                "success_metrics": [
+                    "Task completion rate",
+                    "Project milestone achievement",
+                    "Team productivity metrics"
+                ],
+                "recommendations": [
+                    {
+                        "action": "Implement agile project management methodology",
+                        "timing": "this week",
+                        "priority": "High",
+                        "impact": "Improve project delivery and team coordination"
+                    },
+                    {
+                        "action": "Establish regular team meetings and check-ins",
+                        "timing": "next week",
+                        "priority": "High",
+                        "impact": "Enhance communication and accountability"
+                    },
+                    {
+                        "action": "Use data-driven decision making",
+                        "timing": "this month",
+                        "priority": "Medium",
+                        "impact": "Improve decision quality and business outcomes"
+                    },
+                    {
+                        "action": "Focus on continuous improvement",
+                        "timing": "next month",
+                        "priority": "Medium",
+                        "impact": "Build learning culture and operational excellence"
+                    }
+                ],
+                "analysis_text": f"Manager analysis for {business_name} - {business_type} business (fallback response due to error: {str(e)})",
+            }
         }
 
 
@@ -1190,7 +2164,7 @@ def _generate_dynamic_tasks(business_data: Dict[str, Any], all_agent_data: Dict[
             "priority": "High",
             "timeline": "3-4 weeks",
             "description": "Plan and execute grand opening marketing campaign",
-            "expected_outcome": "Grand opening campaign with customer acquisition"
+            "expected_outcome": "Grand opening campaign and customer acquisition"
         })
 
     elif business_type == "tech_startup":
@@ -1247,127 +2221,4 @@ def _generate_dynamic_tasks(business_data: Dict[str, Any], all_agent_data: Dict[
             "expected_outcome": "Professional website and marketing assets"
         })
 
-    return base_tasks
-
-
-async def assign_tasks_to_agents(business_data: Dict[str, Any], analysis_results: Dict[str, Any]) -> Dict[str, Any]:
-    """AI-powered task assignment to agents based on business analysis"""
-    
-    business_name = business_data.get("business_name", "")
-    business_type = business_data.get("business_type", "")
-    
-    # Extract key insights from analysis
-    strategic_plan = analysis_results.get("strategic_plan", {})
-    swot_analysis = analysis_results.get("swot_analysis", {})
-    financial_analysis = analysis_results.get("financial_analysis", {})
-    sales_strategy = analysis_results.get("sales_strategy", {})
-    
-    prompt = f"""
-    As an AI task orchestrator, assign specific tasks to different agents for:
-
-    Business: {business_name}
-    Type: {business_type}
-    
-    Strategic Plan: {strategic_plan.get('vision', 'Not available')}
-    SWOT Analysis: {swot_analysis.get('strengths', 'Not available')}
-    Financial Analysis: {financial_analysis.get('startup_costs', 'Not available')}
-    Sales Strategy: {sales_strategy.get('target_customers', 'Not available')}
-    
-    Available Agents:
-    1. Strategic Agent - Market analysis, goal setting, strategic planning
-    2. Financial Agent - Budget planning, financial projections, cost analysis
-    3. Sales Agent - Sales strategy, customer acquisition, pipeline management
-    4. Creative Agent - Branding, marketing, content creation
-    5. Analytics Agent - Data analysis, performance tracking, insights
-    6. Manager Agent - Operations, team management, process optimization
-    7. SWOT Agent - Competitive analysis, risk assessment
-    8. Business Model Agent - Revenue model, partnerships, value proposition
-    
-    Please assign specific, actionable tasks to each agent based on the business analysis.
-    Consider the business type, current situation, and strategic goals.
-    """
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an AI task orchestrator that intelligently assigns business tasks to specialized agents based on business analysis and requirements.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=1500,
-            temperature=0.7,
-        )
-
-        task_assignment_text = response.choices[0].message.content
-
-        # Create structured task assignments
-        task_assignments = {
-            "strategic_agent": [
-                "Conduct market research and validation",
-                "Develop strategic goals and KPIs",
-                "Create competitive positioning strategy",
-                "Plan market expansion opportunities",
-            ],
-            "financial_agent": [
-                "Create detailed financial projections",
-                "Develop budget and cash flow management",
-                "Analyze funding requirements and options",
-                "Set up financial monitoring systems",
-            ],
-            "sales_agent": [
-                "Develop sales strategy and process",
-                "Create lead generation campaigns",
-                "Design customer acquisition programs",
-                "Build sales team training programs",
-            ],
-            "creative_agent": [
-                "Develop brand identity and guidelines",
-                "Create marketing content and campaigns",
-                "Design customer engagement strategies",
-                "Plan social media and digital presence",
-            ],
-            "analytics_agent": [
-                "Set up performance tracking systems",
-                "Create data analysis dashboards",
-                "Develop customer insights programs",
-                "Monitor competitive landscape",
-            ],
-            "manager_agent": [
-                "Develop operational processes",
-                "Create team management systems",
-                "Implement quality control measures",
-                "Plan risk management strategies",
-            ],
-            "swot_agent": [
-                "Monitor competitive landscape",
-                "Track market trends and changes",
-                "Assess new opportunities and threats",
-                "Update SWOT analysis regularly",
-            ],
-            "business_model_agent": [
-                "Optimize revenue streams",
-                "Develop partnership strategies",
-                "Enhance value proposition",
-                "Scale business model",
-            ],
-            "assignment_analysis": task_assignment_text,
-        }
-
-        return task_assignments
-
-    except Exception as e:
-        print(f"Error in task assignment: {e}")
-        # Return default task assignments
-        return {
-            "strategic_agent": ["Market research", "Strategic planning"],
-            "financial_agent": ["Financial planning", "Budget management"],
-            "sales_agent": ["Sales strategy", "Customer acquisition"],
-            "creative_agent": ["Branding", "Marketing"],
-            "analytics_agent": ["Performance tracking", "Data analysis"],
-            "manager_agent": ["Operations", "Team management"],
-            "swot_agent": ["Competitive analysis", "Risk assessment"],
-            "business_model_agent": ["Revenue optimization", "Partnerships"],
-        } 
+    return base_tasks 
