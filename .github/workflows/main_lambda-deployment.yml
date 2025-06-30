@@ -1,9 +1,11 @@
-name: Deploy Lambda
+name: Deploy Goku Service to AWS Lambda
 
 on:
   push:
     branches:
+      - main
       - production
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,33 +15,138 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Lambda package in Amazon Linux Docker
-        run: |
-          docker run --rm -v "$PWD/mkai-goku-service":/app -w /app amazonlinux:2 \
-            /bin/bash -c "
-              yum install -y python3 python3-pip zip && \
-              python3 -m pip install --upgrade pip && \
-              python3 -m pip install -r requirements.txt -t /app/build && \
-              cp -r app/* /app/build/ && \
-              cd /app/build && \
-              zip -r /app/lambda_function.zip .
-            "
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-      - name: Install dependencies to temporary folder
+      - name: Create deployment package
         run: |
+          # Create build directory
           mkdir -p build
-          pip install -r mkai-goku-service/requirements.txt -t build
-          cp -r mkai-goku-service/app/* build/
+          
+          # Install dependencies to build directory
+          python3 -m pip install -r requirements.txt -t build/
+          
+          # Copy application code
+          cp -r app/* build/
+          cp -r schemas/* build/ 2>/dev/null || true
+          cp -r core/* build/ 2>/dev/null || true
+          cp -r services/* build/ 2>/dev/null || true
+          cp -r utils/* build/ 2>/dev/null || true
+          
+          # Copy Lambda handler to root of build directory
+          cp lambda_handler.py build/
+          
+          # Create lambda deployment package
+          cd build
+          zip -r ../lambda_deployment.zip .
+          cd ..
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-2
+          aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
 
       - name: Deploy to AWS Lambda
         run: |
-          aws lambda update-function-code \
+          # Check if function exists
+          if aws lambda get-function --function-name mkai-goku-service 2>/dev/null; then
+            echo "Updating existing Lambda function..."
+            aws lambda update-function-code \
+              --function-name mkai-goku-service \
+              --zip-file fileb://lambda_deployment.zip
+          else
+            echo "Creating new Lambda function..."
+            aws lambda create-function \
+              --function-name mkai-goku-service \
+              --runtime python3.10 \
+              --role ${{ secrets.AWS_LAMBDA_ROLE_ARN }} \
+              --handler lambda_handler.lambda_handler \
+              --zip-file fileb://lambda_deployment.zip \
+              --timeout 30 \
+              --memory-size 512
+          fi
+
+      - name: Update Lambda configuration
+        run: |
+          aws lambda update-function-configuration \
             --function-name mkai-goku-service \
-            --zip-file fileb://lambda_function.zip
+            --environment Variables='{
+              "MONGODB_URI":"${{ secrets.MONGODB_URI }}",
+              "OPENAI_API_KEY":"${{ secrets.OPENAI_API_KEY }}",
+              "PROJECT_NAME":"MKAi Goku Service",
+              "VERSION":"1.0.0",
+              "BACKEND_CORS_ORIGINS":"*"
+            }' \
+            --timeout 30 \
+            --memory-size 512
+
+      - name: Create or update API Gateway
+        run: |
+          # Check if API Gateway exists
+          API_NAME="mkai-goku-service-api"
+          REST_API_ID=$(aws apigateway get-rest-apis --query "items[?name=='$API_NAME'].id" --output text)
+          
+          if [ -z "$REST_API_ID" ] || [ "$REST_API_ID" = "None" ]; then
+            echo "Creating new API Gateway..."
+            REST_API_ID=$(aws apigateway create-rest-api \
+              --name $API_NAME \
+              --description "API Gateway for mkai-goku-service" \
+              --query 'id' --output text)
+          fi
+          
+          echo "API Gateway ID: $REST_API_ID"
+          
+          # Get root resource ID
+          ROOT_RESOURCE_ID=$(aws apigateway get-resources \
+            --rest-api-id $REST_API_ID \
+            --query 'items[?path==`/`].id' \
+            --output text)
+          
+          # Create proxy resource if it doesn't exist
+          PROXY_RESOURCE_ID=$(aws apigateway get-resources \
+            --rest-api-id $REST_API_ID \
+            --query 'items[?path==`{proxy+}`].id' \
+            --output text)
+          
+          if [ -z "$PROXY_RESOURCE_ID" ] || [ "$PROXY_RESOURCE_ID" = "None" ]; then
+            PROXY_RESOURCE_ID=$(aws apigateway create-resource \
+              --rest-api-id $REST_API_ID \
+              --parent-id $ROOT_RESOURCE_ID \
+              --path-part "{proxy+}" \
+              --query 'id' --output text)
+          fi
+          
+          # Get Lambda function ARN
+          FUNCTION_ARN=$(aws lambda get-function \
+            --function-name mkai-goku-service \
+            --query 'Configuration.FunctionArn' \
+            --output text)
+          
+          # Add Lambda permission for API Gateway
+          aws lambda add-permission \
+            --function-name mkai-goku-service \
+            --statement-id apigateway-access \
+            --action lambda:InvokeFunction \
+            --principal apigateway.amazonaws.com \
+            --source-arn "arn:aws:execute-api:$AWS_DEFAULT_REGION:*:$REST_API_ID/*/*/*" 2>/dev/null || true
+          
+          # Create integration
+          aws apigateway put-integration \
+            --rest-api-id $REST_API_ID \
+            --resource-id $PROXY_RESOURCE_ID \
+            --http-method ANY \
+            --type AWS_PROXY \
+            --integration-http-method POST \
+            --uri "arn:aws:apigateway:$AWS_DEFAULT_REGION:lambda:path/2015-03-31/functions/$FUNCTION_ARN/invocations"
+          
+          # Deploy API
+          aws apigateway create-deployment \
+            --rest-api-id $REST_API_ID \
+            --stage-name prod
+          
+          echo "✅ API Gateway URL: https://$REST_API_ID.execute-api.$AWS_DEFAULT_REGION.amazonaws.com/prod/"
+          echo "✅ API Documentation: https://$REST_API_ID.execute-api.$AWS_DEFAULT_REGION.amazonaws.com/prod/docs"
