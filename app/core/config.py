@@ -16,7 +16,7 @@ class Settings:
         # API Configuration
         self.API_V1_STR: str = "/api/v1"
         self.PROJECT_NAME: str = "Multi-Agent Business Analysis System"
-        self.VERSION: str = "1.0.0"
+        self.VERSION: str = "1.0.1"
         self.API_URL: str = os.getenv("API_URL", "http://localhost:8000/api/v1")
         
         # Database Configuration

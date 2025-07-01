@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "mkai-goku-service",
+          "region": "asia-southeast1"
+        }
+      }
+    ]
+  }
+}

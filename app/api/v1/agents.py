@@ -277,6 +277,9 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
             raise HTTPException(status_code=404, detail="Agent not found")
 
         # Create task in database
+        # Use description if provided, otherwise use query as description
+        task_description = task_data.description if task_data.description else task_data.query
+        
         collection = db.get_collection("mcp_tasks")
         if collection is None:
             raise HTTPException(status_code=500, detail="Database connection failed")
@@ -285,7 +288,7 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
             "agent_id": agent_id,
             "type": task_data.type,
             "params": task_data.params,
-            "description": task_data.description,
+            "description": task_description,
             "status": "pending",
             "created_at": db._get_current_time(),
             "updated_at": db._get_current_time(),
@@ -344,7 +347,7 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
                 # Prepare task data for forwarding (exclude business_id, agent_id, _id)
                 forward_task_data = {
                     "type": task_data.type,
-                    "description": task_data.description,
+                    "description": task_description,
                     "params": task_data.params,
                     "callback_url": callback_url,
                 }
@@ -460,7 +463,7 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
             agent_id=agent_id,
             type=task_data.type,
             params=task_data.params,
-            description=task_data.description,
+            description=task_description,
             context=task_data.context,
             callback_url=callback_url,
             status="pending",
@@ -875,11 +878,14 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
         if task_collection is None:
             raise HTTPException(status_code=500, detail="Database connection failed")
 
+        # Use description if provided, otherwise use query as description
+        task_description = task_data.description if task_data.description else task_data.query
+        
         task_doc = {
             "agent_id": agent_id,
             "type": task_data.type,
             "params": task_data.params,
-            "description": task_data.description,
+            "description": task_description,
             "status": "pending",
             "created_at": db._get_current_time(),
             "updated_at": db._get_current_time(),
@@ -934,7 +940,7 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
                 # Prepare task data for forwarding (exclude business_id, agent_id, _id)
                 forward_task_data = {
                     "type": task_data.type,
-                    "description": task_data.description,
+                    "description": task_description,
                     "params": task_data.params,
                     "callback_url": secure_callback_url,
                 }
@@ -1051,7 +1057,7 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
             business_id=task_data.business_id,
             type=task_data.type,
             params=task_data.params,
-            description=task_data.description,
+            description=task_description,
             context=task_data.context,
             callback_url=secure_callback_url,
             status="pending",

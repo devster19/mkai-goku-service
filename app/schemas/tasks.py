@@ -66,6 +66,7 @@ class MCPTaskRequest(BaseModel):
     """MCP standard task request model"""
 
     query: str
+    description: Optional[str] = None  # Task description (can be derived from query if not provided)
     type: str  # e.g., "content_generation", "analysis", "prediction"
     params: Dict[str, Any]
     context: Optional[MCPContext] = None
@@ -129,6 +130,7 @@ class MCPTaskResponse(BaseModel):
     business_id: Optional[str] = None  # Business this task belongs to
     type: str
     params: Dict[str, Any]
+    description: Optional[str] = None  # Task description
     status: str  # pending, in_progress, completed, failed
     result: Optional[Dict[str, Any]] = None  # Legacy result field
     output: Optional[TaskOutput] = None  # New enhanced output field

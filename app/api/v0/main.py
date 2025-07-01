@@ -557,7 +557,7 @@ async def root():
     """Root endpoint with API information"""
     return {
         "message": "Multi-Agent Business Analysis System",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "endpoints": {"process_business": "/process-business", "health": "/health"},
         "agents": {
             "strategic": "Port 5001",
