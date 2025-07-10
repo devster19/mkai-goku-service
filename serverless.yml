@@ -5,6 +5,10 @@ provider:
   runtime: python3.11
   region: ap-southeast-1
   stage: dev
+  ecr:
+    images:
+      mkai-goku-service-app:
+        path: .
 
 plugins:
   - serverless-dotenv-plugin
