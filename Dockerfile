@@ -6,13 +6,17 @@ FROM public.ecr.aws/lambda/python:3.11
 # Copy function code
 COPY app/ app/
 COPY requirements.txt ./
+COPY start.sh ./
 
 # Install dependencies to /var/task
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt --target /var/task
 
-# (Optional) Show installed packages for debug
-# RUN pip freeze
+# Expose port for local dev
+EXPOSE 8000
 
-# Set the CMD to your handler (function name in app.main)
-CMD ["app.main.lambda_handler"]
+# For local dev: run start.sh (uncomment below for local Docker run)
+# ENTRYPOINT ["/bin/bash", "./start.sh"]
+
+# For AWS Lambda: set the CMD to your handler (function name in app.lambda_handler)
+CMD ["app.lambda_handler.lambda_handler"]
