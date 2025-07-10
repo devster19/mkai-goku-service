@@ -1,0 +1,32 @@
+service: mkai-goku-service
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: ap-southeast-1
+  stage: dev
+  environment: ${file(.env)}
+
+plugins:
+  - serverless-dotenv-plugin
+
+functions:
+  app:
+    handler: app.main.lambda_handler
+    timeout: 30
+    memorySize: 256
+    events:
+      - http:
+          path: /
+          method: any
+      - http:
+          path: /{proxy+}
+          method: any
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!__pycache__/**'
+    - 'app/**'
+    - 'requirements.txt'
+    - '!tests/**'
