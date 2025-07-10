@@ -5,7 +5,6 @@ provider:
   runtime: python3.11
   region: ap-southeast-7
   stage: dev
-  environment: ${file(.env)}
 
 plugins:
   - serverless-dotenv-plugin

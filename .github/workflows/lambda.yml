@@ -41,7 +41,7 @@ jobs:
 
       - name: Write all envs from LAMBDA_ENV_VARS to .env
         run: |
-          echo "${{ secrets.LAMBDA_ENV_VARS }}" | tr -d '\r' > .env
+          echo "${{ secrets.LAMBDA_ENV_VARS }}" > .env
 
       - name: Deploy with Serverless
         env:
