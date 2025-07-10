@@ -1,14 +1,16 @@
-service: mkai-goku-service
+service: mkai-goku-api-service
 
 provider:
   name: aws
   runtime: python3.11
-  region: ap-southeast-1
+  region: ap-southeast-7
   stage: dev
-  ecr:
-    images:
-      mkai-goku-service-app:
-        path: .
+  memorySize: 256
+  timeout: 30
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    API_URL: ${env:API_URL}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
 
 plugins:
   - serverless-dotenv-plugin
@@ -16,7 +18,7 @@ plugins:
 functions:
   app:
     image:
-      name: mkai-goku-service-app
+      uri: 778812951593.dkr.ecr.ap-southeast-7.amazonaws.com/serverless-mkai-goku-api-service-dev:latest
     timeout: 30
     memorySize: 256
     events:
