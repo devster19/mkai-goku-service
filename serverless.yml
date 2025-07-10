@@ -26,11 +26,3 @@ functions:
       - http:
           path: /{proxy+}
           method: any
-
-package:
-  patterns:
-    - '!node_modules/**'
-    - '!__pycache__/**'
-    - 'app/**'
-    - 'requirements.txt'
-    - '!tests/**'
