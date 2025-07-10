@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
+  setup:
+    name: Setup Environment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -35,11 +36,34 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Install Serverless Framework
-        run: npm install -g serverless
+      - name: Install Serverless Framework v3
+        run: npm install -g serverless@3
 
       - name: Write all envs from LAMBDA_ENV_VARS to .env
-        run: echo "${{ secrets.LAMBDA_ENV_VARS }}" > .env
+        run: |
+          echo "${{ secrets.LAMBDA_ENV_VARS }}" | tr -d '\r' > .env
+
+      - name: Upload .env artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: envfile
+          path: .env
+
+  deploy:
+    name: Deploy Lambda
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download .env artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: envfile
+
+      - name: Install Serverless Framework v3
+        run: npm install -g serverless@3
 
       - name: Deploy with Serverless
         env:
