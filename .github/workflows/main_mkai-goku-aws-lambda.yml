@@ -34,4 +34,18 @@ jobs:
 
       - name: Deploy to Lambda
         run: |
-          aws lambda update-function-code --function-name YOUR_LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
+          # Try to update the function code, if it doesn't exist, create it
+          aws lambda update-function-code --function-name mkai-goku-service --zip-file fileb://lambda.zip || \
+          aws lambda create-function --function-name mkai-goku-service \
+            --runtime python3.10 \
+            --role arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_LAMBDA_ROLE \
+            --handler app.handler \
+            --zip-file fileb://lambda.zip \
+            --timeout 15 \
+            --memory-size 128 
+
+      - name: Update Lambda environment variables
+        run: |
+          aws lambda update-function-configuration \
+            --function-name mkai-goku-service \
+            --environment "Variables={${{ secrets.LAMBDA_ENV_VARS }}}"
