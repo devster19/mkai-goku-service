@@ -1,12 +1,14 @@
 """
 Agent-related Pydantic schemas
 """
+
 from pydantic import BaseModel, HttpUrl
 from typing import List, Dict, Any, Optional
 
 
 class AgentType(BaseModel):
     """Agent type definition"""
+
     type_id: str
     name: str
     description: str
@@ -18,6 +20,7 @@ class AgentType(BaseModel):
 
 class AgentTypeUpdate(BaseModel):
     """Agent type update model (partial updates)"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
@@ -28,6 +31,7 @@ class AgentTypeUpdate(BaseModel):
 
 class AgentTypeList(BaseModel):
     """List of agent types"""
+
     agent_types: List[AgentType]
     total_count: int
     category_filter: Optional[str] = None
@@ -35,8 +39,11 @@ class AgentTypeList(BaseModel):
 
 class AgentRegister(BaseModel):
     """Agent registration model"""
+
     agent_name: str
-    agent_type: str  # e.g., "custom_analytics", "specialized_financial", "market_research"
+    agent_type: (
+        str  # e.g., "custom_analytics", "specialized_financial", "market_research"
+    )
     endpoint_url: str  # The URL where this agent can be reached
     api_key: Optional[str] = None  # Optional API key for authentication
     description: Optional[str] = None
@@ -51,6 +58,7 @@ class AgentRegister(BaseModel):
 
 class AgentUpdate(BaseModel):
     """Agent update model"""
+
     agent_name: Optional[str] = None
     description: Optional[str] = None
     capabilities: Optional[List[str]] = None
@@ -66,6 +74,7 @@ class AgentUpdate(BaseModel):
 
 class AgentResponse(BaseModel):
     """Agent response model"""
+
     agent_id: str
     agent_name: str
     agent_type: str
@@ -73,6 +82,7 @@ class AgentResponse(BaseModel):
     capabilities: List[str]
     endpoint_url: str
     callback_url: Optional[str] = None
+    api_key: Optional[str] = None
     status: str
     version: str
     contact_info: Optional[Dict[str, str]] = None
@@ -84,12 +94,14 @@ class AgentResponse(BaseModel):
 
 class SimpleAgentRegistration(BaseModel):
     """Simple agent registration model (ChatGPT example style)"""
+
     name: str
     callback_url: HttpUrl
 
 
 class AgentListResponse(BaseModel):
     """Response model for agent listing"""
+
     agents: List[AgentResponse]
     total_count: int
     status_filter: Optional[str] = None
@@ -98,6 +110,7 @@ class AgentListResponse(BaseModel):
 
 class AgentSearchResponse(BaseModel):
     """Response model for agent search"""
+
     agents: List[AgentResponse]
     total_count: int
-    search_query: str 
+    search_query: str
