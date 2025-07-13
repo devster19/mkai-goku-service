@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: ap-southeast-7
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
 
 jobs:
   test:
@@ -61,15 +61,13 @@ jobs:
 
     - name: Create environment file
       run: |
-        # Create .env file with secrets
         echo "${{ secrets.LAMBDA_ENV_VARS }}" > .env
       
     - name: Deploy to AWS Lambda with ECR build
       run: |
-        # Serverless will automatically build Docker image and push to ECR
-        serverless deploy --stage dev --region ${{ secrets.AWS_REGION }}
+        serverless deploy --stage dev --region ${{ env.AWS_REGION }}
 
     - name: Get deployment info
       run: |
         echo "Deployment completed successfully!"
-        serverless info --stage dev --region ${{ secrets.AWS_REGION }}
+        serverless info --stage dev --region ${{ env.AWS_REGION }}
