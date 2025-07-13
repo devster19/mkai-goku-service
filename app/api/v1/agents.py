@@ -267,19 +267,22 @@ async def register_simple_agent(agent_data: SimpleAgentRegistration):
 # MCP Task Management Endpoints
 
 
-@router.post("/{agent_id}/tasks", response_model=MCPTaskResponse, status_code=201)
+@router.post("/{agent_id}/mcp/tasks", response_model=MCPTaskResponse, status_code=201)
 async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
     """Create a new MCP task for an agent using MCP standard format"""
     try:
         # Verify agent exists
         agent = agent_service.get_agent(agent_id)
+        print("xxx")
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
         # Create task in database
         # Use description if provided, otherwise use query as description
-        task_description = task_data.description if task_data.description else task_data.query
-        
+        task_description = (
+            task_data.description if task_data.description else task_data.query
+        )
+
         collection = db.get_collection("mcp_tasks")
         if collection is None:
             raise HTTPException(status_code=500, detail="Database connection failed")
@@ -335,22 +338,30 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
                 print(f"ERROR: Failed to create sync test log: {e}")
         else:
             print(f"ERROR: Could not get mcp_task_logs collection for sync test")
+        print(f"DEBUG: Agent endpoint URL: {agent.endpoint_url}")
 
         # Forward task to agent's endpoint if endpoint_url is available
-        if hasattr(agent, "endpoint_url") and agent.endpoint_url:
+        if agent.endpoint_url:
+            print("✅ DEBUG: Forward condition met, starting forward process")
+        else:
+            print("❌ DEBUG: Forward condition not met")
+        if agent.endpoint_url:
+            forward_task_data = {
+                "type": task_data.type,
+                "description": task_description,
+                "params": task_data.params,
+                "callback_url": callback_url,
+            }
+            print(f"DEBUG: Forward task data: {forward_task_data}")
             # Create a background task for forwarding (non-blocking)
             import asyncio
+
+            print(f"DEBUG: Agent endpoint URL2: {agent.endpoint_url}")
 
             async def forward_task_async():
                 print(f"DEBUG: Starting forward_task_async for task {task_id}")
 
                 # Prepare task data for forwarding (exclude business_id, agent_id, _id)
-                forward_task_data = {
-                    "type": task_data.type,
-                    "description": task_description,
-                    "params": task_data.params,
-                    "callback_url": callback_url,
-                }
 
                 # Add context if provided
                 if task_data.context:
@@ -360,7 +371,7 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
                 headers = {"Content-Type": "application/json"}
 
                 # Add API key if available
-                if hasattr(agent, "api_key") and agent.api_key:
+                if agent.api_key:
                     headers["Authorization"] = f"Bearer {agent.api_key}"
                     # Alternative header formats if needed
                     # headers["X-API-Key"] = agent.api_key
@@ -397,7 +408,9 @@ async def create_mcp_task(agent_id: str, task_data: MCPTaskRequest):
                     # Forward task to agent's endpoint
                     async with httpx.AsyncClient(timeout=30.0) as client:
                         response = await client.post(
-                            agent.endpoint_url, json=forward_task_data, headers=headers
+                            agent.endpoint_url,
+                            json=forward_task_data,
+                            headers=headers,
                         )
 
                         # Update forwarding log with response
@@ -873,14 +886,18 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
 
         agent_id = str(agent["_id"])
 
+        print("agent ", agent)
+
         # Create task in database
         task_collection = db.get_collection("mcp_tasks")
         if task_collection is None:
             raise HTTPException(status_code=500, detail="Database connection failed")
 
         # Use description if provided, otherwise use query as description
-        task_description = task_data.description if task_data.description else task_data.query
-        
+        task_description = (
+            task_data.description if task_data.description else task_data.query
+        )
+
         task_doc = {
             "agent_id": agent_id,
             "type": task_data.type,
@@ -930,7 +947,10 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
             print(f"ERROR: Could not get mcp_task_logs collection for sync test")
 
         # Forward task to agent's endpoint if endpoint_url is available
-        if hasattr(agent, "endpoint_url") and agent.endpoint_url:
+        if agent.get("endpoint_url"):
+            print(
+                f"DEBUG: Forwarding task {task_id} to agent {agent_id} at {agent['endpoint_url']}"
+            )
             # Create a background task for forwarding (non-blocking)
             import asyncio
 
@@ -953,17 +973,18 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
                 headers = {"Content-Type": "application/json"}
 
                 # Add API key if available
-                if hasattr(agent, "api_key") and agent.api_key:
-                    headers["Authorization"] = f"Bearer {agent.api_key}"
+                if agent.get("api_key"):
+                    headers["Authorization"] = f"Bearer {agent['api_key']}"
                     # Alternative header formats if needed
-                    # headers["X-API-Key"] = agent.api_key
+                    # headers["X-API-Key"] = agent['api_key']
 
                 # Log forwarding attempt
                 forward_log = {
                     "task_id": task_id,
                     "agent_id": agent_id,
-                    "endpoint_url": agent.endpoint_url,
+                    "endpoint_url": agent["endpoint_url"],
                     "forward_data": forward_task_data,
+                    "callback_url": secure_callback_url,
                     "headers": {
                         k: v for k, v in headers.items() if k != "Authorization"
                     },  # Don't log auth headers
@@ -987,11 +1008,17 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
                 try:
                     import httpx
 
+                    print(
+                        f"DEBUG: Forwarding task {task_id} to agent {agent_id} at {agent['endpoint_url']}"
+                    )
                     # Forward task to agent's endpoint
                     async with httpx.AsyncClient(timeout=30.0) as client:
                         response = await client.post(
-                            agent.endpoint_url, json=forward_task_data, headers=headers
+                            agent["endpoint_url"],
+                            json=forward_task_data,
+                            headers=headers,
                         )
+                        print("xxx ", response)
 
                         # Update forwarding log with response
                         update_log = {
@@ -1005,7 +1032,7 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
 
                         if response.status_code in [200, 201, 202]:
                             print(
-                                f"DEBUG: Task forwarded successfully to agent {agent_id} at {agent.endpoint_url}"
+                                f"DEBUG: Task forwarded successfully to agent {agent_id} at {agent['endpoint_url']}"
                             )
                             print(
                                 f"DEBUG: Agent response status: {response.status_code}"
@@ -1013,7 +1040,7 @@ async def create_mcp_standard_task(task_data: MCPTaskRequest):
                             update_log["status"] = "success"
                         else:
                             print(
-                                f"WARNING: Failed to forward task to agent {agent_id} at {agent.endpoint_url}"
+                                f"WARNING: Failed to forward task to agent {agent_id} at {agent['endpoint_url']}"
                             )
                             print(f"WARNING: Response status: {response.status_code}")
                             update_log["status"] = "failed"
