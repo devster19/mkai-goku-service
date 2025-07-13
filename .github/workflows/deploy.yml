@@ -60,6 +60,7 @@ jobs:
       run: |
         # Create .env file with secrets
         echo "${{ secrets.LAMBDA_ENV_VARS }}" > .env
+        echo "${{ vars.AWS_REGION }}"
       
     - name: Deploy to AWS Lambda with ECR build
       run: |
