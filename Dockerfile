@@ -1,5 +1,5 @@
 # Use the official AWS Lambda Python runtime as base image for ARM64
-FROM public.ecr.aws/lambda/python:3.11-arm64
+FROM public.ecr.aws/lambda/python:3.11
 
 # Copy requirements file
 COPY requirements.txt ${LAMBDA_TASK_ROOT}

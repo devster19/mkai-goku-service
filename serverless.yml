@@ -7,12 +7,12 @@ provider:
   stage: dev
   memorySize: 512
   timeout: 60
-  architecture: arm64
+  # architecture: arm64
   ecr:
     images:
       fastapi:
         path: ./
-        platform: linux/arm64
+        # platform: linux/arm64
 
 plugins:
   - serverless-dotenv-plugin
