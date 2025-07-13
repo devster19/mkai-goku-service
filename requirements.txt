@@ -12,9 +12,4 @@ mangum==0.17.0
 aiofiles==23.2.1
 tqdm==4.67.1 
 schedule==1.2.0
-<<<<<<< HEAD
 requests==2.31.0
-mangum 
-=======
-requests==2.31.0
->>>>>>> x-origin/main
