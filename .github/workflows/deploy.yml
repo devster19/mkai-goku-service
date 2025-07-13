@@ -67,9 +67,9 @@ jobs:
       
     - name: Deploy to AWS Lambda with ECR build
       run: |
-        serverless deploy --stage dev --region ${{ env.AWS_REGION }}
+        serverless deploy --region ${{ env.AWS_REGION }}
 
     - name: Get deployment info
       run: |
         echo "Deployment completed successfully!"
-        serverless info --stage dev --region ${{ env.AWS_REGION }}
+        serverless info --region ${{ env.AWS_REGION }}
