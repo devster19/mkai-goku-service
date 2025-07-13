@@ -1,0 +1,17 @@
+node_modules
+.serverless
+.git
+.gitignore
+README.md
+*.md
+.env
+package/
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.coverage
+.cache
+.vscode

@@ -51,3 +51,7 @@ htmlcov/
 coverage.xml
 *.cover 
 package
+
+package*.json
+.serverless
+node_modules/
