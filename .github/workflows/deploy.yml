@@ -42,7 +42,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+        aws-region: ${{ vars.AWS_REGION }}
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -64,9 +64,9 @@ jobs:
     - name: Deploy to AWS Lambda with ECR build
       run: |
         # Serverless will automatically build Docker image and push to ECR
-        serverless deploy --stage dev --region ${{ env.AWS_REGION }}
+        serverless deploy --stage dev --region ${{ vars.AWS_REGION }}
 
     - name: Get deployment info
       run: |
         echo "Deployment completed successfully!"
-        serverless info --stage dev --region ${{ env.AWS_REGION }}
+        serverless info --stage dev --region ${{ vars.AWS_REGION }}
