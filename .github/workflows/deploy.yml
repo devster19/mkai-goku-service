@@ -67,9 +67,9 @@ jobs:
     - name: Deploy to AWS Lambda with ECR build
       run: |
         # Serverless will automatically build Docker image and push to ECR
-        serverless deploy --stage dev
+        serverless deploy --stage dev --region ${{ secrets.AWS_REGION }}
 
     - name: Get deployment info
       run: |
         echo "Deployment completed successfully!"
-        serverless info --stage dev
+        serverless info --stage dev --region ${{ secrets.AWS_REGION }}
