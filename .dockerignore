@@ -1,13 +1,26 @@
+<<<<<<< HEAD
 # Git
 .git
 .gitignore
 
 # Python
+=======
+node_modules
+.serverless
+.git
+.gitignore
+README.md
+*.md
+.env
+package/
+.pytest_cache
+>>>>>>> x-origin/main
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
+<<<<<<< HEAD
 env
 pip-log.txt
 pip-delete-this-directory.txt
@@ -68,3 +81,8 @@ logs/
 .env
 .env.local
 .env.*.local 
+=======
+.coverage
+.cache
+.vscode
+>>>>>>> x-origin/main

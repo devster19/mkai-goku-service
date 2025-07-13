@@ -1,0 +1,32 @@
+service: mkai-goku-api-service
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  region: ap-southeast-7
+  stage: dev
+  memorySize: 512
+  timeout: 30
+  # architecture: arm64
+  ecr:
+    images:
+      fastapi:
+        path: ./
+        # platform: linux/arm64
+
+plugins:
+  - serverless-dotenv-plugin
+
+functions:
+  fastapi:
+    image:
+      name: fastapi
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /
+          method: ANY
+          cors: true

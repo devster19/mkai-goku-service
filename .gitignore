@@ -50,6 +50,14 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover 
+<<<<<<< HEAD
 
 *.bak
 *.yaml
+=======
+package
+
+package*.json
+.serverless
+node_modules/
+>>>>>>> x-origin/main
